@@ -12,8 +12,8 @@ st.cache_data.clear()
 # ======================
 # Konfigurasi file
 # ======================
-file_path = 'FOA ALITA AUGUST_2025.xlsb'
-sheet_name = 'FOA Active'
+file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
+sheet_name = 'Query'
 
 @st.cache_data
 def load_data():
