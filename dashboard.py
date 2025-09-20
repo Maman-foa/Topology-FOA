@@ -78,7 +78,7 @@ if menu_option == "Topology":
 
                 # ambil semua node unik
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-                nodes_order = [n for n in nodes_order if str(n).strip() not in ["", "nan", "NaN"]]
+                nodes_order = [n for n in nodes_order if str(n).strip() not in ["", "", ""]]
 
                 # hanya ambil node yang muncul di kolom dest atau punya pasangan valid
                 valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
@@ -130,7 +130,7 @@ if menu_option == "Topology":
                 # tambahkan semua node
                 for nid in nodes_order:
                     nid = str(nid).strip()
-                    if not nid or nid.lower() == "nan":
+                    if not nid or nid.lower() == "":
                         continue
                     if nid not in valid_dest_nodes and nid not in valid_site_nodes:
                         continue  # skip orphan P0
