@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 # ======================
 # Bersihkan cache lama
@@ -32,17 +31,9 @@ search_node = st.sidebar.text_input("🔍 Cari New Site ID / Destination:")
 # Main Area
 # ======================
 if menu_option == "Topology":
-    st.markdown("""
-        <div style="position: fixed; top: 40px; left: 0; right: 0;
-                    background-color: #0e1117; padding: 12px;
-                    border-bottom: 2px solid #444; z-index: 9999;
-                    text-align: center;">
-            <h2 style="color:white; margin:0;">🧬 Topology Fiber Optic Active</h2>
-        </div>
-        <div style="margin-top:120px;"></div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h2 style='color:white;'>🧬 Topology Fiber Optic Active</h2>", unsafe_allow_html=True)
 
-    # Filter berdasarkan search_node
+    # Filter data
     if search_node:
         df_filtered = df[
             df["New Site ID"].astype(str).str.contains(search_node, case=False, na=False) |
@@ -53,72 +44,147 @@ if menu_option == "Topology":
 
     if not df_filtered.empty:
         ring_ids = df_filtered["Ring ID"].dropna().unique()
+
         for ring in ring_ids:
             st.subheader(f"🔗 Ring ID: {ring}")
+
+            # FLP Vendor unik
             vendors = df[df["Ring ID"]==ring]["FLP Vendor"].dropna().unique()
             if len(vendors) > 0:
                 st.markdown(f"**FLP Vendor:** {', '.join(vendors)}")
+
+            # Span ID unik
             if "Span ID" in df.columns:
                 spans = df[df["Ring ID"]==ring]["Span ID"].dropna().unique()
                 if len(spans) > 0:
                     st.markdown(f"**Span ID:** {', '.join(spans)}")
 
+            ring_data = df[df["Ring ID"] == ring].dropna(subset=["New Site ID", "New Destenation"])
+            net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
+
             # ======================
-            # Network visualization per ring
+            # Mapping info
             # ======================
-            net = Network(height="600px", width="100%", bgcolor="#0e1117", font_color="white", directed=True)
-            net.barnes_hut(gravity=-80000, central_gravity=0.3, spring_length=150, spring_strength=0.001, damping=0.09)
+            site_names_map = pd.Series(df["Site Name"].values, index=df["New Site ID"].astype(str)).to_dict() if "Site Name" in df.columns else {}
+            site_hostname_map = pd.Series(df["Host Name"].values, index=df["New Site ID"].astype(str)).to_dict() if "Host Name" in df.columns else {}
+            dest_names_map = pd.Series(df["Destination Name"].values, index=df["New Destenation"].astype(str)).to_dict() if "Destination Name" in df.columns else pd.Series(df["New Destenation"].values, index=df["New Destenation"].astype(str)).to_dict()
+            dest_hostname_map = pd.Series(df["Destination Host Name"].values, index=df["New Destenation"].astype(str)).to_dict() if "Destination Host Name" in df.columns else {}
 
-            # Ambil semua node unik dari ring
-            nodes_ring = pd.concat([
-                df[df["Ring ID"]==ring]["New Site ID"],
-                df[df["Ring ID"]==ring]["New Destenation"]
-            ]).dropna().astype(str).str.strip().unique()
+            all_nodes = set(ring_data["New Site ID"].astype(str)).union(set(ring_data["New Destenation"].astype(str)))
+            node_labels = {}
+            border_colors = {}
 
-            # Buat dictionary node info
-            node_info = {}
-            for node in nodes_ring:
-                # Ambil baris pertama yang cocok untuk node ini
-                row = df[(df["Ring ID"]==ring) & ((df["New Site ID"]==node) | (df["New Destenation"]==node))].iloc[0]
-                node_info[node] = {
-                    "Fiber Type": row["Fiber Type"],
-                    "Site Name": row["Site Name"],
-                    "Host Name": row["Host Name"],
-                    "FLP Vendor": row["FLP Vendor"]
-                }
+            # Hitung degree setiap node
+            node_degree = {}
+            for _, row in ring_data.iterrows():
+                site_id = str(row["New Site ID"]).strip()
+                dest_id = str(row["New Destenation"]).strip()
+                node_degree[site_id] = node_degree.get(site_id, 0) + 1
+                node_degree[dest_id] = node_degree.get(dest_id, 0) + 1
 
-            # Tambahkan node ke network
-            for node_id, info in node_info.items():
-                fiber_type_lower = str(info["Fiber Type"]).lower()
-                if fiber_type_lower == "dark fiber" or fiber_type_lower == "p0":
+            # ======================
+            # Tambahkan node dengan info dan image
+            # ======================
+            for node_id in all_nodes:
+                node_id_str = str(node_id).strip()
+                if node_id_str in ring_data["New Site ID"].astype(str).values:
+                    name = site_names_map.get(node_id_str, "")
+                    hostname = site_hostname_map.get(node_id_str, "")
+                    fiber_type = ring_data[ring_data["New Site ID"].astype(str)==node_id_str].iloc[0].get("Fiber Type","")
+                    flp_vendor = ring_data[ring_data["New Site ID"].astype(str)==node_id_str].iloc[0].get("FLP Vendor","")
+                else:
+                    name = dest_names_map.get(node_id_str, "")
+                    hostname = dest_hostname_map.get(node_id_str, "")
+                    fiber_type = ring_data[ring_data["New Destenation"].astype(str)==node_id_str].iloc[0].get("Fiber Type","")
+                    flp_vendor = ring_data[ring_data["New Destenation"].astype(str)==node_id_str].iloc[0].get("FLP Vendor","")
+
+                fiber_type = str(fiber_type).strip()
+                flp_vendor = str(flp_vendor).strip()
+
+                # Node ujung jadi P0 kecuali P0_1
+                if node_degree.get(node_id_str, 0) == 1 and fiber_type.lower() not in ["p0_1"]:
+                    fiber_type = "P0"
+
+                # Label
+                label_parts = [fiber_type, node_id_str]
+                if pd.notna(name) and str(name).strip() != "":
+                    label_parts.append(str(name))
+                if pd.notna(hostname) and str(hostname).strip() != "":
+                    label_parts.append(str(hostname))
+                if pd.notna(flp_vendor) and str(flp_vendor).strip() != "":
+                    label_parts.append(str(flp_vendor))
+                node_labels[node_id_str] = "\n".join(label_parts)
+
+                # Border color
+                if fiber_type.lower() == "dark fiber":
+                    border_colors[node_id_str] = "007FFF"
+                elif fiber_type.lower() in ["p0", "p0_1"]:
+                    border_colors[node_id_str] = "21793A"
+                else:
+                    border_colors[node_id_str] = "A2A2C2"
+
+                # Tentukan posisi grid
+            max_per_row = 8
+            x_spacing = 150
+            y_spacing = 150
+            for i, node_id in enumerate(all_nodes):
+                row_num = i // max_per_row
+                col_num = i % max_per_row
+                x = col_num * x_spacing
+                y = row_num * y_spacing
+
+                fiber_type_lower = node_labels[node_id].split("\n")[0].lower()
+                if fiber_type_lower == "dark fiber":
                     node_image = "https://img.icons8.com/ios-filled/50/007FFF/router.png"
-                elif fiber_type_lower == "p0_1":
+                elif fiber_type_lower in ["p0", "p0_1"]:
                     node_image = "https://img.icons8.com/ios-filled/50/21793A/router.png"
                 else:
                     node_image = "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
 
-                title_text = f"""
-                Fiber Type: {info['Fiber Type']}<br>
-                Site Name: {info['Site Name']}<br>
-                Hostname: {info['Host Name']}<br>
-                FLP Vendor: {info['FLP Vendor']}
-                """
-                net.add_node(node_id, label=node_id, shape='image', image=node_image, physics=False, title=title_text)
+                net.add_node(
+                    node_id,
+                    label=node_labels[node_id],
+                    x=x,
+                    y=y,
+                    physics=False,
+                    size=50,
+                    shape="image",
+                    image=node_image,
+                    color={"border": border_colors[node_id], "background": "white"},
+                    title=node_labels[node_id]
+                )
 
-            # Tambahkan edge
-            edges_ring = df[df["Ring ID"]==ring][["New Site ID","New Destenation"]].dropna()
-            for _, row in edges_ring.iterrows():
-                source = str(row["New Site ID"]).strip()
-                target = str(row["New Destenation"]).strip()
-                if source in node_info and target in node_info:
-                    net.add_edge(source, target)
+            # ======================
+            # Tambahkan edge hanya jika node sudah ada
+            # ======================
+            for _, row in ring_data.iterrows():
+                site_id = str(row["New Site ID"]).strip()
+                dest_id = str(row["New Destenation"]).strip()
+                flp_length = row.get("FLP LENGTH", "")
 
-            # Tampilkan network di Streamlit
-            path = f"network_{ring}.html"
-            net.save_graph(path)
-            HtmlFile = open(path, 'r', encoding='utf-8')
-            components.html(HtmlFile.read(), height=600)
+                if site_id in all_nodes and dest_id in all_nodes:
+                    net.add_edge(
+                        site_id,
+                        dest_id,
+                        label=str(flp_length) if pd.notna(flp_length) else "",
+                        title=f"FLP LENGTH: {flp_length}",
+                        font={"color": "red"},
+                        width=3,
+                        color="black",
+                        arrows="",
+                        smooth=False
+                    )
 
+            # ======================
+            # Tambahkan grid CSS background
+            # ======================
+            html_str = net.generate_html()
+            html_str = html_str.replace(
+                '<body>',
+                '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+            )
+
+            components.html(html_str, height=850, scrolling=True)
     else:
         st.warning("⚠️ Node tidak ditemukan di data.")
 
@@ -126,31 +192,8 @@ if menu_option == "Topology":
 # Dashboard view
 # ======================
 elif menu_option == "Dashboard":
-    st.markdown("""
-        <div style="position: fixed; top: 40px; left: 0; right: 0;
-                    background-color: #0e1117; padding: 12px;
-                    border-bottom: 2px solid #444; z-index: 9999;
-                    text-align: center;">
-            <h2 style="color:white; margin:0;">📶 Dashboard Fiber Optic Active</h2>
-        </div>
-        <div style="margin-top:120px;"></div>
-    """ , unsafe_allow_html=True)
-
+    st.markdown("<h2 style='color:white;'>📶 Dashboard Fiber Optic Active</h2>", unsafe_allow_html=True)
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
     st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
-
-    # Tabel interaktif
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(editable=False, groupable=True, filter=True, sortable=True, resizable=True)
-    gb.configure_grid_options(domLayout='normal')
-    gridOptions = gb.build()
-
-    AgGrid(
-        df,
-        gridOptions=gridOptions,
-        enable_enterprise_modules=True,
-        fit_columns_on_grid_load=True,
-        height=600,
-        reload_data=True
-    )
+    st.dataframe(df.head(20))
