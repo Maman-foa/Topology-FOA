@@ -148,16 +148,7 @@ if menu_option == "Topology":
             # ======================
             # Tambahkan edge dengan check (FIX)
             # ======================
-            for _, row in ring_data.iterrows():
-                site_id = str(row["New Site ID"]).strip()
-                dest_id = str(row["New Destenation"]).strip()
-                flp_length = row.get("FLP LENGTH","")
-
-                # Tambahkan node kalau belum ada
-                if site_id not in net.get_nodes():
-                    net.add_node(site_id, label=site_id)
-                if dest_id not in net.get_nodes():
-                    net.add_node(dest_id, label=dest_id)
+           
 
                 # Baru tambahkan edge
                 net.add_edge(
