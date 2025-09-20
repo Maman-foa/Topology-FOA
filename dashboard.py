@@ -59,6 +59,7 @@ if menu_option == "Topology":
                 if len(spans) > 0:
                     st.markdown(f"**Span ID:** {', '.join(spans)}")
 
+            # Buang NaN lebih awal
             ring_data = df[df["Ring ID"] == ring].dropna(subset=["New Site ID", "New Destenation"])
 
             net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
@@ -120,6 +121,9 @@ if menu_option == "Topology":
             y_spacing = 150
 
             for i, node_id in enumerate(all_nodes):
+                if not node_id:  # skip kosong
+                    continue
+
                 row_num = i // max_per_row
                 col_num = i % max_per_row
                 x = col_num * x_spacing
@@ -153,8 +157,7 @@ if menu_option == "Topology":
                 dest_id = str(row["New Destenation"]).strip()
                 flp_length = row.get("FLP LENGTH","")
 
-                # Cek node ada sebelum add_edge
-                if site_id in all_nodes and dest_id in all_nodes:
+                if site_id in net.get_nodes() and dest_id in net.get_nodes():
                     net.add_edge(
                         site_id,
                         dest_id,
@@ -166,6 +169,8 @@ if menu_option == "Topology":
                         arrows="",
                         smooth=False
                     )
+                else:
+                    st.write(f"⚠️ Edge dilewati karena node hilang: {site_id} - {dest_id}")
 
             # ======================
             # Tampilkan network
