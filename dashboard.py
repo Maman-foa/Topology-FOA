@@ -69,24 +69,25 @@ if menu_option == "Topology":
             net = Network(height="600px", width="100%", bgcolor="#0e1117", font_color="white", directed=True)
             net.barnes_hut(gravity=-80000, central_gravity=0.3, spring_length=150, spring_strength=0.001, damping=0.09)
 
-            # Ambil edges per ring, drop row yang kosong
-            required_cols = ["New Site ID","New Destenation","Fiber Type","Site Name","Host Name","FLP Vendor"]
-            edges_ring = df[df["Ring ID"]==ring][required_cols].dropna(subset=["New Site ID","New Destenation"])
+            # Ambil semua node unik dari ring
+            nodes_ring = pd.concat([
+                df[df["Ring ID"]==ring]["New Site ID"],
+                df[df["Ring ID"]==ring]["New Destenation"]
+            ]).dropna().astype(str).str.strip().unique()
 
             # Buat dictionary node info
             node_info = {}
-            for _, row in edges_ring.iterrows():
-                for col in ["New Site ID","New Destenation"]:
-                    node_id = str(row[col]).strip()
-                    if node_id not in node_info:
-                        node_info[node_id] = {
-                            "Fiber Type": row["Fiber Type"],
-                            "Site Name": row["Site Name"],
-                            "Host Name": row["Host Name"],
-                            "FLP Vendor": row["FLP Vendor"]
-                        }
+            for node in nodes_ring:
+                # Ambil baris pertama yang cocok untuk node ini
+                row = df[(df["Ring ID"]==ring) & ((df["New Site ID"]==node) | (df["New Destenation"]==node))].iloc[0]
+                node_info[node] = {
+                    "Fiber Type": row["Fiber Type"],
+                    "Site Name": row["Site Name"],
+                    "Host Name": row["Host Name"],
+                    "FLP Vendor": row["FLP Vendor"]
+                }
 
-            # Tambahkan node dengan image dan tooltip
+            # Tambahkan node ke network
             for node_id, info in node_info.items():
                 fiber_type_lower = str(info["Fiber Type"]).lower()
                 if fiber_type_lower == "dark fiber" or fiber_type_lower == "p0":
@@ -104,7 +105,8 @@ if menu_option == "Topology":
                 """
                 net.add_node(node_id, label=node_id, shape='image', image=node_image, physics=False, title=title_text)
 
-            # Tambahkan edge hanya jika kedua node ada
+            # Tambahkan edge
+            edges_ring = df[df["Ring ID"]==ring][["New Site ID","New Destenation"]].dropna()
             for _, row in edges_ring.iterrows():
                 source = str(row["New Site ID"]).strip()
                 target = str(row["New Destenation"]).strip()
@@ -116,6 +118,7 @@ if menu_option == "Topology":
             net.save_graph(path)
             HtmlFile = open(path, 'r', encoding='utf-8')
             components.html(HtmlFile.read(), height=600)
+
     else:
         st.warning("⚠️ Node tidak ditemukan di data.")
 
