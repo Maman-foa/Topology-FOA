@@ -12,7 +12,7 @@ st.cache_data.clear()
 # ======================
 # Konfigurasi file
 # ======================
-file_path = 'src/Files/FOA ALITA AUGUST_2025.xlsb'
+file_path = 'FOA ALITA AUGUST_2025.xlsb'
 sheet_name = 'Query'
 
 @st.cache_data
