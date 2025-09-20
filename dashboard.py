@@ -70,14 +70,14 @@ if menu_option == "Topology":
             net.barnes_hut(gravity=-80000, central_gravity=0.3, spring_length=150, spring_strength=0.001, damping=0.09)
 
             # Buat dictionary node dan informasi
-            edges_ring = df[df["Ring ID"]==ring][["New Site ID","New Destenation","Fiber Type","Site Name","Hostname","FLP Vendor"]].dropna()
+            edges_ring = df[df["Ring ID"]==ring][["New Site ID","New Destenation","Fiber Type","Site Name","Host Name","FLP Vendor"]].dropna()
             node_info = {}
             for _, row in edges_ring.iterrows():
                 for col in ["New Site ID","New Destenation"]:
                     node_info[col] = {
                         "Fiber Type": row["Fiber Type"],
                         "Site Name": row["Site Name"],
-                        "Hostname": row["Hostname"],
+                        "Host Name": row["Host Name"],
                         "FLP Vendor": row["FLP Vendor"]
                     }
 
@@ -96,7 +96,7 @@ if menu_option == "Topology":
                 title_text = f"""
                 Fiber Type: {info['Fiber Type']}<br>
                 Site Name: {info['Site Name']}<br>
-                Hostname: {info['Hostname']}<br>
+                Host Name: {info['Host Name']}<br>
                 FLP Vendor: {info['FLP Vendor']}
                 """
                 net.add_node(node_id, label=node_id, shape='image', image=node_image, physics=False, title=title_text)
