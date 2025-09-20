@@ -49,12 +49,13 @@ col_flp_len = get_col(df, "FLP LENGTH")
 # Main Area
 # ======================
 if menu_option == "Topology":
-    st.markdown("<h2 style='color:white;'>🧬 Topology Fiber Optic Active</h2>", unsafe_allow_html=True)
+    with st.container():
+        st.title("🧬 Topology Fiber Optic Active")
+        st.write("")  # spasi atas agar tidak terlalu nempel
 
     if not search_node:
         st.info("ℹ️ Masukkan **Site ID / Destination** di sidebar untuk menampilkan topology.")
     else:
-        # Filter source data berdasarkan search
         mask = (
             df[col_site].astype(str).str.contains(search_node, case=False, na=False) |
             df[col_dest].astype(str).str.contains(search_node, case=False, na=False)
@@ -73,33 +74,18 @@ if menu_option == "Topology":
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
 
-                # hilangkan baris dengan destination kosong
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
-                # ======================
-                # Ambil semua node unik
-                # ======================
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
+                nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]]
 
-                # buang NaN, string kosong, 'nan', 'none'
-                nodes_order = [
-                    str(n).strip()
-                    for n in nodes_order
-                    if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]
-                ]
-
-                # hanya ambil node yang muncul di kolom dest atau site
                 valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                # ======================
-                # Network init
-                # ======================
                 net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
                 net.toggle_physics(False)
 
-                # prepare degree
                 node_degree = {}
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
@@ -109,7 +95,6 @@ if menu_option == "Topology":
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # posisi grid
                 max_per_row = 8
                 x_spacing = 150
                 y_spacing = 150
@@ -137,15 +122,12 @@ if menu_option == "Topology":
                         "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                     }
 
-                # ======================
-                # Tambahkan node
-                # ======================
                 for nid in nodes_order:
                     nid = str(nid).strip()
                     if not nid or nid.lower() in ["nan", "none"]:
                         continue
                     if nid not in valid_dest_nodes and nid not in valid_site_nodes:
-                        continue  # skip orphan / invalid node
+                        continue
 
                     info = get_node_info(nid)
                     fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
@@ -159,19 +141,18 @@ if menu_option == "Topology":
                     else:
                         node_image = "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
 
-                    label_parts = [fiber, nid]
-                    if info["Site Name"]:
-                        label_parts.append(info["Site Name"])
-                    if info["Host Name"]:
-                        label_parts.append(info["Host Name"])
-                    if info["FLP Vendor"]:
-                        label_parts.append(info["FLP Vendor"])
-                    title = "<br>".join([p for p in label_parts if p])
+                    tooltip_parts = []
+                    if fiber: tooltip_parts.append(f"<b>Fiber Type</b>: {fiber}")
+                    tooltip_parts.append(f"<b>Site ID</b>: {nid}")
+                    if info["Site Name"]: tooltip_parts.append(f"<b>Site Name</b>: {info['Site Name']}")
+                    if info["Host Name"]: tooltip_parts.append(f"<b>Host Name</b>: {info['Host Name']}")
+                    if info["FLP Vendor"]: tooltip_parts.append(f"<b>FLP Vendor</b>: {info['FLP Vendor']}")
+                    title = "<br>".join(tooltip_parts)
 
                     x, y = positions.get(nid, (0,0))
                     net.add_node(
                         nid,
-                        label="\n".join(label_parts),
+                        label=f"{fiber}\n{nid}",
                         x=x, y=y,
                         physics=False,
                         size=50,
@@ -183,9 +164,6 @@ if menu_option == "Topology":
                     )
                     added_nodes.add(nid)
 
-                # ======================
-                # Tambahkan edges
-                # ======================
                 edges_to_add = []
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
@@ -205,7 +183,7 @@ if menu_option == "Topology":
                         "from": s,
                         "to": t,
                         "label": str(flp_len) if flp_len != "" else "",
-                        "title": f"FLP LENGTH: {flp_len}",
+                        "title": f"<b>FLP LENGTH</b>: {flp_len}",
                         "width": 3,
                         "color": "black",
                         "font": {"color": "red"},
@@ -216,7 +194,6 @@ if menu_option == "Topology":
                 for e in edges_to_add:
                     net.edges.append(e)
 
-                # Render
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
@@ -225,7 +202,10 @@ if menu_option == "Topology":
                 components.html(html_str, height=850, scrolling=True)
 
 elif menu_option == "Dashboard":
-    st.markdown("<h2 style='color:white;'>📶 Dashboard Fiber Optic Active</h2>", unsafe_allow_html=True)
+    with st.container():
+        st.title("📶 Dashboard Fiber Optic Active")
+        st.write("")
+
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
     st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
