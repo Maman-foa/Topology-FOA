@@ -59,7 +59,6 @@ if menu_option == "Topology":
                 if len(spans) > 0:
                     st.markdown(f"**Span ID:** {', '.join(spans)}")
 
-            # Buang NaN lebih awal
             ring_data = df[df["Ring ID"] == ring].dropna(subset=["New Site ID", "New Destenation"])
 
             net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
@@ -121,9 +120,6 @@ if menu_option == "Topology":
             y_spacing = 150
 
             for i, node_id in enumerate(all_nodes):
-                if not node_id:  # skip kosong
-                    continue
-
                 row_num = i // max_per_row
                 col_num = i % max_per_row
                 x = col_num * x_spacing
@@ -150,27 +146,31 @@ if menu_option == "Topology":
                 )
 
             # ======================
-            # Tambahkan edge dengan check
+            # Tambahkan edge dengan check (FIX)
             # ======================
             for _, row in ring_data.iterrows():
                 site_id = str(row["New Site ID"]).strip()
                 dest_id = str(row["New Destenation"]).strip()
                 flp_length = row.get("FLP LENGTH","")
 
-                if site_id in net.get_nodes() and dest_id in net.get_nodes():
-                    net.add_edge(
-                        site_id,
-                        dest_id,
-                        label=str(flp_length) if pd.notna(flp_length) else "",
-                        title=f"FLP LENGTH: {flp_length}",
-                        font={"color":"red"},
-                        width=3,
-                        color="black",
-                        arrows="",
-                        smooth=False
-                    )
-                else:
-                    st.write(f"⚠️ Edge dilewati karena node hilang: {site_id} - {dest_id}")
+                # Tambahkan node kalau belum ada
+                if site_id not in net.get_nodes():
+                    net.add_node(site_id, label=site_id)
+                if dest_id not in net.get_nodes():
+                    net.add_node(dest_id, label=dest_id)
+
+                # Baru tambahkan edge
+                net.add_edge(
+                    site_id,
+                    dest_id,
+                    label=str(flp_length) if pd.notna(flp_length) else "",
+                    title=f"FLP LENGTH: {flp_length}",
+                    font={"color":"red"},
+                    width=3,
+                    color="black",
+                    arrows="",
+                    smooth=False
+                )
 
             # ======================
             # Tampilkan network
