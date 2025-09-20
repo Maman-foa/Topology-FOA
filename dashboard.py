@@ -76,16 +76,26 @@ if menu_option == "Topology":
                 # hilangkan baris dengan destination kosong
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
-                # ambil semua node unik
+                # ======================
+                # Ambil semua node unik
+                # ======================
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-                nodes_order = [n for n in nodes_order if str(n).strip() not in ["", "", ""]]
 
-                # hanya ambil node yang muncul di kolom dest atau punya pasangan valid
+                # buang NaN, string kosong, 'nan', 'none'
+                nodes_order = [
+                    str(n).strip()
+                    for n in nodes_order
+                    if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]
+                ]
+
+                # hanya ambil node yang muncul di kolom dest atau site
                 valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
+                # ======================
                 # Network init
+                # ======================
                 net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
                 net.toggle_physics(False)
 
@@ -127,13 +137,15 @@ if menu_option == "Topology":
                         "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                     }
 
-                # tambahkan semua node
+                # ======================
+                # Tambahkan node
+                # ======================
                 for nid in nodes_order:
                     nid = str(nid).strip()
-                    if not nid or nid.lower() == "":
+                    if not nid or nid.lower() in ["nan", "none"]:
                         continue
                     if nid not in valid_dest_nodes and nid not in valid_site_nodes:
-                        continue  # skip orphan P0
+                        continue  # skip orphan / invalid node
 
                     info = get_node_info(nid)
                     fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
@@ -171,12 +183,16 @@ if menu_option == "Topology":
                     )
                     added_nodes.add(nid)
 
-                # edges
+                # ======================
+                # Tambahkan edges
+                # ======================
                 edges_to_add = []
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
                     if not s or not t:
+                        continue
+                    if s.lower() in ["nan", "none"] or t.lower() in ["nan", "none"]:
                         continue
                     flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                     if s not in added_nodes:
