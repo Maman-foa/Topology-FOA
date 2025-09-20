@@ -78,7 +78,12 @@ if menu_option == "Topology":
 
                 # ambil semua node unik
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-                nodes_order = [n for n in nodes_order if str(n).strip() != "nan" and str(n).strip() != ""]
+                nodes_order = [n for n in nodes_order if str(n).strip() not in ["", "nan", "NaN"]]
+
+                # hanya ambil node yang muncul di kolom dest atau punya pasangan valid
+                valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
+                valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
+                nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
                 # Network init
                 net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
@@ -127,6 +132,9 @@ if menu_option == "Topology":
                     nid = str(nid).strip()
                     if not nid or nid.lower() == "nan":
                         continue
+                    if nid not in valid_dest_nodes and nid not in valid_site_nodes:
+                        continue  # skip orphan P0
+
                     info = get_node_info(nid)
                     fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
                     if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
