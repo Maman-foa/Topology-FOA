@@ -42,7 +42,7 @@ if menu_option == "Topology":
         <div style="margin-top:120px;"></div>
     """, unsafe_allow_html=True)
 
-    # Filter data
+    # Filter berdasarkan search_node
     if search_node:
         df_filtered = df[
             df["New Site ID"].astype(str).str.contains(search_node, case=False, na=False) |
@@ -71,11 +71,9 @@ if menu_option == "Topology":
 
             # Ambil edges per ring, drop row yang kosong
             required_cols = ["New Site ID","New Destenation","Fiber Type","Site Name","Host Name","FLP Vendor"]
-            edges_ring = df[df["Ring ID"]==ring][required_cols].dropna()
+            edges_ring = df[df["Ring ID"]==ring][required_cols].dropna(subset=["New Site ID","New Destenation"])
 
-            # ======================
             # Buat dictionary node info
-            # ======================
             node_info = {}
             for _, row in edges_ring.iterrows():
                 for col in ["New Site ID","New Destenation"]:
@@ -88,9 +86,7 @@ if menu_option == "Topology":
                             "FLP Vendor": row["FLP Vendor"]
                         }
 
-            # ======================
-            # Tambahkan node dengan icon dan tooltip
-            # ======================
+            # Tambahkan node dengan image dan tooltip
             for node_id, info in node_info.items():
                 fiber_type_lower = str(info["Fiber Type"]).lower()
                 if fiber_type_lower == "dark fiber" or fiber_type_lower == "p0":
@@ -108,22 +104,18 @@ if menu_option == "Topology":
                 """
                 net.add_node(node_id, label=node_id, shape='image', image=node_image, physics=False, title=title_text)
 
-            # ======================
             # Tambahkan edge hanya jika kedua node ada
-            # ======================
             for _, row in edges_ring.iterrows():
                 source = str(row["New Site ID"]).strip()
                 target = str(row["New Destenation"]).strip()
                 if source in node_info and target in node_info:
                     net.add_edge(source, target)
 
-            # ======================
-            # Render di Streamlit
-            # ======================
+            # Tampilkan network di Streamlit
             path = f"network_{ring}.html"
             net.save_graph(path)
-            with open(path, 'r', encoding='utf-8') as HtmlFile:
-                components.html(HtmlFile.read(), height=600)
+            HtmlFile = open(path, 'r', encoding='utf-8')
+            components.html(HtmlFile.read(), height=600)
     else:
         st.warning("⚠️ Node tidak ditemukan di data.")
 
@@ -139,7 +131,7 @@ elif menu_option == "Dashboard":
             <h2 style="color:white; margin:0;">📶 Dashboard Fiber Optic Active</h2>
         </div>
         <div style="margin-top:120px;"></div>
-    """, unsafe_allow_html=True)
+    """ , unsafe_allow_html=True)
 
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
