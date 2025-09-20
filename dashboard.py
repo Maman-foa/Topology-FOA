@@ -16,9 +16,7 @@ sheet_name = 'Query'
 
 @st.cache_data
 def load_data():
-    # baca semua kolom sebagai string sedapat mungkin untuk konsistensi
     df_local = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
-    # strip header whitespace
     df_local.columns = df_local.columns.str.strip()
     return df_local
 
@@ -40,7 +38,7 @@ def get_col(df, name, alt=None):
     return None
 
 col_site = get_col(df, "New Site ID")
-col_dest = get_col(df, "New Destenation", alt="New Destination")  # menjaga ejaan user
+col_dest = get_col(df, "New Destenation", alt="New Destination")
 col_fiber = get_col(df, "Fiber Type")
 col_site_name = get_col(df, "Site Name")
 col_host = get_col(df, "Host Name", alt="Hostname")
@@ -72,19 +70,21 @@ if menu_option == "Topology":
             st.subheader(f"🔗 Ring ID: {ring}")
 
             ring_df = df[df["Ring ID"] == ring].copy()
-            # pastikan ID konsisten string + strip
             ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
             ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
 
-            # ambil semua node unik (pakai set of strings)
+            # hilangkan baris dengan destination kosong (NaN / "")
+            ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
+
+            # ambil semua node unik
             nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-            nodes_order = [n for n in nodes_order if str(n).strip() != "nan" and str(n).strip() != ""]  # hapus kosong
+            nodes_order = [n for n in nodes_order if str(n).strip() != "nan" and str(n).strip() != ""]
 
             # Network init
             net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
-            net.toggle_physics(False)  # matikan physics global supaya kaku
+            net.toggle_physics(False)
 
-            # prepare maps & degree
+            # prepare degree
             node_degree = {}
             for _, r in ring_df.iterrows():
                 s = str(r[col_site]).strip()
@@ -94,7 +94,7 @@ if menu_option == "Topology":
                 if t:
                     node_degree[t] = node_degree.get(t, 0) + 1
 
-            # buat posisi grid
+            # posisi grid
             max_per_row = 8
             x_spacing = 150
             y_spacing = 150
@@ -106,12 +106,9 @@ if menu_option == "Topology":
                 y = row_num * y_spacing
                 positions[nid] = (x, y)
 
-            # track nodes added
             added_nodes = set()
 
-            # fungsi untuk ambil info node (baris pertama yang match)
             def get_node_info(nid):
-                # cari di site kolom dulu, jika tidak ada cari di dest kolom
                 df_match = ring_df[ring_df[col_site].astype(str).str.strip() == nid]
                 if df_match.empty:
                     df_match = ring_df[ring_df[col_dest].astype(str).str.strip() == nid]
@@ -125,17 +122,15 @@ if menu_option == "Topology":
                     "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                 }
 
-            # tambahkan semua node dulu (pasti)
+            # tambahkan semua node
             for nid in nodes_order:
                 nid = str(nid).strip()
                 if not nid or nid.lower() == "nan":
                     continue
                 info = get_node_info(nid)
                 fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
-                # jika degree 1 dan bukan P0_1 -> tandai P0
                 if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
                     fiber = "P0"
-                # pilih icon
                 f_low = fiber.lower()
                 if f_low == "dark fiber":
                     node_image = "https://img.icons8.com/ios-filled/50/007FFF/router.png"
@@ -154,41 +149,34 @@ if menu_option == "Topology":
                 title = "<br>".join([p for p in label_parts if p])
 
                 x, y = positions.get(nid, (0,0))
-                # tambahkan node
-                net.add_node(nid,
-                             label="\n".join(label_parts),
-                             x=x, y=y,
-                             physics=False,
-                             size=50,
-                             shape="image",
-                             image=node_image,
-                             color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"),
-                                    "background": "white"},
-                             title=title)
+                net.add_node(
+                    nid,
+                    label="\n".join(label_parts),
+                    x=x, y=y,
+                    physics=False,
+                    size=50,
+                    shape="image",
+                    image=node_image,
+                    color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"),
+                           "background": "white"},
+                    title=title
+                )
                 added_nodes.add(nid)
 
-            # ======================
-            # Tambahkan edges — dibuat aman:
-            # - pastikan site/dest di-strip
-            # - jika node belum ada, tambahkan fallback minimal node
-            # - tambahkan edge (bypass assert dengan menambahkan to net.edges)
-            # ======================
-            # Prepare edges list (so we can append)
+            # edges
             edges_to_add = []
             for _, r in ring_df.iterrows():
                 s = str(r[col_site]).strip()
                 t = str(r[col_dest]).strip()
-                if s == "" or t == "":
+                if not s or not t:
                     continue
                 flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
-                # ensure nodes present in net (and added_nodes)
                 if s not in added_nodes:
                     net.add_node(s, label=s)
                     added_nodes.add(s)
                 if t not in added_nodes:
                     net.add_node(t, label=t)
                     added_nodes.add(t)
-                # append edge dict (use 'from'/'to' keys expected by vis)
                 edge = {
                     "from": s,
                     "to": t,
@@ -201,23 +189,10 @@ if menu_option == "Topology":
                 }
                 edges_to_add.append(edge)
 
-            # Bypass add_edge assertion by appending to net.edges if present,
-            # otherwise fallback to net.add_edge (nodes guaranteed to exist)
-            if hasattr(net, "edges"):
-                # net.edges is list of dicts in pyvis
-                for e in edges_to_add:
-                    try:
-                        net.edges.append(e)
-                    except Exception:
-                        # fallback safe add_edge
-                        net.add_edge(e["from"], e["to"], label=e.get("label",""), title=e.get("title",""),
-                                     width=e.get("width",3), color=e.get("color","black"))
-            else:
-                for e in edges_to_add:
-                    net.add_edge(e["from"], e["to"], label=e.get("label",""), title=e.get("title",""),
-                                 width=e.get("width",3), color=e.get("color","black"))
+            for e in edges_to_add:
+                net.edges.append(e)
 
-            # Render HTML (tambahkan CSS grid)
+            # Render
             html_str = net.generate_html()
             html_str = html_str.replace(
                 '<body>',
