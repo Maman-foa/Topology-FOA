@@ -44,6 +44,8 @@ col_site_name = get_col(df, "Site Name")
 col_host = get_col(df, "Host Name", alt="Hostname")
 col_flp = get_col(df, "FLP Vendor")
 col_flp_len = get_col(df, "FLP LENGTH")
+col_syskey = get_col(df, "System Key")
+col_dest_name = get_col(df, "Destination Name")
 
 # ======================
 # Main Area
@@ -76,153 +78,156 @@ if menu_option == "Topology":
                 # hilangkan baris dengan destination kosong
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
-                # ======================
-                # Ambil semua node unik
-                # ======================
-                nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-
-                # buang NaN, string kosong, 'nan', 'none'
-                nodes_order = [
-                    str(n).strip()
-                    for n in nodes_order
-                    if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]
-                ]
-
-                # hanya ambil node yang muncul di kolom dest atau site
-                valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
-                valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
-                nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
+                # layout: kiri tabel, kanan topology
+                col1, col2 = st.columns([1, 3])
 
                 # ======================
-                # Network init
+                # Tabel kecil di kiri
                 # ======================
-                net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
-                net.toggle_physics(False)
+                table_cols = [c for c in [
+                    col_syskey, col_flp, col_site, col_site_name,
+                    col_dest, col_dest_name, col_fiber, col_host
+                ] if c is not None]
 
-                # prepare degree
-                node_degree = {}
-                for _, r in ring_df.iterrows():
-                    s = str(r[col_site]).strip()
-                    t = str(r[col_dest]).strip()
-                    if s:
-                        node_degree[s] = node_degree.get(s, 0) + 1
-                    if t:
-                        node_degree[t] = node_degree.get(t, 0) + 1
-
-                # posisi grid
-                max_per_row = 8
-                x_spacing = 150
-                y_spacing = 150
-                positions = {}
-                for i, nid in enumerate(nodes_order):
-                    row_num = i // max_per_row
-                    col_num = i % max_per_row
-                    x = col_num * x_spacing
-                    y = row_num * y_spacing
-                    positions[nid] = (x, y)
-
-                added_nodes = set()
-
-                def get_node_info(nid):
-                    df_match = ring_df[ring_df[col_site].astype(str).str.strip() == nid]
-                    if df_match.empty:
-                        df_match = ring_df[ring_df[col_dest].astype(str).str.strip() == nid]
-                    if df_match.empty:
-                        return {"Fiber Type": "", "Site Name": "", "Host Name": "", "FLP Vendor": ""}
-                    row0 = df_match.iloc[0]
-                    return {
-                        "Fiber Type": str(row0[col_fiber]) if col_fiber in row0 and pd.notna(row0[col_fiber]) else "",
-                        "Site Name": str(row0[col_site_name]) if col_site_name in row0 and pd.notna(row0[col_site_name]) else "",
-                        "Host Name": str(row0[col_host]) if col_host in row0 and pd.notna(row0[col_host]) else "",
-                        "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
-                    }
-
-                # ======================
-                # Tambahkan node
-                # ======================
-                for nid in nodes_order:
-                    nid = str(nid).strip()
-                    if not nid or nid.lower() in ["nan", "none"]:
-                        continue
-                    if nid not in valid_dest_nodes and nid not in valid_site_nodes:
-                        continue  # skip orphan / invalid node
-
-                    info = get_node_info(nid)
-                    fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
-                    if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
-                        fiber = "P0"
-                    f_low = fiber.lower()
-                    if f_low == "dark fiber":
-                        node_image = "https://img.icons8.com/ios-filled/50/007FFF/router.png"
-                    elif f_low in ["p0", "p0_1"]:
-                        node_image = "https://img.icons8.com/ios-filled/50/21793A/router.png"
-                    else:
-                        node_image = "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
-
-                    label_parts = [fiber, nid]
-                    if info["Site Name"]:
-                        label_parts.append(info["Site Name"])
-                    if info["Host Name"]:
-                        label_parts.append(info["Host Name"])
-                    if info["FLP Vendor"]:
-                        label_parts.append(info["FLP Vendor"])
-                    title = "<br>".join([p for p in label_parts if p])
-
-                    x, y = positions.get(nid, (0,0))
-                    net.add_node(
-                        nid,
-                        label="\n".join(label_parts),
-                        x=x, y=y,
-                        physics=False,
-                        size=50,
-                        shape="image",
-                        image=node_image,
-                        color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"),
-                               "background": "white"},
-                        title=title
+                with col1:
+                    st.markdown("### 📋 Data Ring")
+                    st.dataframe(
+                        ring_df[table_cols].reset_index(drop=True),
+                        use_container_width=True,
+                        height=600
                     )
-                    added_nodes.add(nid)
 
                 # ======================
-                # Tambahkan edges
+                # Topology di kanan
                 # ======================
-                edges_to_add = []
-                for _, r in ring_df.iterrows():
-                    s = str(r[col_site]).strip()
-                    t = str(r[col_dest]).strip()
-                    if not s or not t:
-                        continue
-                    if s.lower() in ["nan", "none"] or t.lower() in ["nan", "none"]:
-                        continue
-                    flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
-                    if s not in added_nodes:
-                        net.add_node(s, label=s)
-                        added_nodes.add(s)
-                    if t not in added_nodes:
-                        net.add_node(t, label=t)
-                        added_nodes.add(t)
-                    edge = {
-                        "from": s,
-                        "to": t,
-                        "label": str(flp_len) if flp_len != "" else "",
-                        "title": f"FLP LENGTH: {flp_len}",
-                        "width": 3,
-                        "color": "black",
-                        "font": {"color": "red"},
-                        "smooth": False
-                    }
-                    edges_to_add.append(edge)
+                with col2:
+                    # Ambil semua node unik
+                    nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
+                    nodes_order = [
+                        str(n).strip()
+                        for n in nodes_order
+                        if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]
+                    ]
+                    valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
+                    valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
+                    nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                for e in edges_to_add:
-                    net.edges.append(e)
+                    net = Network(height="85vh", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
+                    net.toggle_physics(False)
 
-                # Render
-                html_str = net.generate_html()
-                html_str = html_str.replace(
-                    '<body>',
-                    '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
-                )
-                components.html(html_str, height=850, scrolling=True)
+                    # degree
+                    node_degree = {}
+                    for _, r in ring_df.iterrows():
+                        s = str(r[col_site]).strip()
+                        t = str(r[col_dest]).strip()
+                        if s:
+                            node_degree[s] = node_degree.get(s, 0) + 1
+                        if t:
+                            node_degree[t] = node_degree.get(t, 0) + 1
+
+                    # grid positions
+                    max_per_row = 8
+                    x_spacing = 150
+                    y_spacing = 150
+                    positions = {}
+                    for i, nid in enumerate(nodes_order):
+                        row_num = i // max_per_row
+                        col_num = i % max_per_row
+                        positions[nid] = (col_num * x_spacing, row_num * y_spacing)
+
+                    added_nodes = set()
+
+                    def get_node_info(nid):
+                        df_match = ring_df[ring_df[col_site].astype(str).str.strip() == nid]
+                        if df_match.empty:
+                            df_match = ring_df[ring_df[col_dest].astype(str).str.strip() == nid]
+                        if df_match.empty:
+                            return {"Fiber Type": "", "Site Name": "", "Host Name": "", "FLP Vendor": ""}
+                        row0 = df_match.iloc[0]
+                        return {
+                            "Fiber Type": str(row0[col_fiber]) if col_fiber in row0 and pd.notna(row0[col_fiber]) else "",
+                            "Site Name": str(row0[col_site_name]) if col_site_name in row0 and pd.notna(row0[col_site_name]) else "",
+                            "Host Name": str(row0[col_host]) if col_host in row0 and pd.notna(row0[col_host]) else "",
+                            "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
+                        }
+
+                    # Tambahkan node
+                    for nid in nodes_order:
+                        nid = str(nid).strip()
+                        if not nid or nid.lower() in ["nan", "none"]:
+                            continue
+                        if nid not in valid_dest_nodes and nid not in valid_site_nodes:
+                            continue
+
+                        info = get_node_info(nid)
+                        fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
+                        if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
+                            fiber = "P0"
+                        f_low = fiber.lower()
+                        if f_low == "dark fiber":
+                            node_image = "https://img.icons8.com/ios-filled/50/007FFF/router.png"
+                        elif f_low in ["p0", "p0_1"]:
+                            node_image = "https://img.icons8.com/ios-filled/50/21793A/router.png"
+                        else:
+                            node_image = "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
+
+                        label_parts = [fiber, nid]
+                        if info["Site Name"]:
+                            label_parts.append(info["Site Name"])
+                        if info["Host Name"]:
+                            label_parts.append(info["Host Name"])
+                        if info["FLP Vendor"]:
+                            label_parts.append(info["FLP Vendor"])
+                        title = "<br>".join([p for p in label_parts if p])
+
+                        x, y = positions.get(nid, (0,0))
+                        net.add_node(
+                            nid,
+                            label="\n".join(label_parts),
+                            x=x, y=y,
+                            physics=False,
+                            size=50,
+                            shape="image",
+                            image=node_image,
+                            color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"),
+                                   "background": "white"},
+                            title=title
+                        )
+                        added_nodes.add(nid)
+
+                    # Tambahkan edges
+                    edges_to_add = []
+                    for _, r in ring_df.iterrows():
+                        s = str(r[col_site]).strip()
+                        t = str(r[col_dest]).strip()
+                        if not s or not t:
+                            continue
+                        if s.lower() in ["nan", "none"] or t.lower() in ["nan", "none"]:
+                            continue
+                        flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
+                        if s not in added_nodes:
+                            net.add_node(s, label=s)
+                            added_nodes.add(s)
+                        if t not in added_nodes:
+                            net.add_node(t, label=t)
+                            added_nodes.add(t)
+                        edges_to_add.append({
+                            "from": s, "to": t,
+                            "label": str(flp_len) if flp_len != "" else "",
+                            "title": f"FLP LENGTH: {flp_len}",
+                            "width": 3, "color": "black",
+                            "font": {"color": "red"}, "smooth": False
+                        })
+
+                    for e in edges_to_add:
+                        net.edges.append(e)
+
+                    html_str = net.generate_html()
+                    html_str = html_str.replace(
+                        '<body>',
+                        '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+                    )
+                    components.html(html_str, height=850, scrolling=True)
 
 elif menu_option == "Dashboard":
     st.markdown("<h2 style='color:white;'>📶 Dashboard Fiber Optic Active</h2>", unsafe_allow_html=True)
