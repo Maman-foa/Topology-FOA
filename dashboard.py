@@ -205,7 +205,7 @@ if menu_option == "Topology":
     label=str(flp_len) if flp_len else "",
     title=f"FLP LENGTH: {flp_len}",
     width=3,
-    color="black",
+    color="red",
     smooth=False  # <- ini bikin garis kaku/tidak melengkung
 )
 
