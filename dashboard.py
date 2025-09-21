@@ -60,20 +60,22 @@ def get_col(df, name, alt=None):
 # Main Area
 # ======================
 if menu_option == "Topology":
-    # Judul utama freeze
+    # ======================
+    # Kontainer scrollable dengan header freeze
+    # ======================
     st.markdown(
         """
-        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
-                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🧬 Topology Fiber Optic Active
-        </h2>
+        <div style="max-height:750px; overflow-y:auto; border:0;">
+            <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                       z-index:999; border-bottom:1px solid #ddd; margin:0;">
+                🧬 Topology Fiber Optic Active
+            </h2>
         """,
         unsafe_allow_html=True
     )
 
-    # Jika belum search
     if not st.session_state.do_search or search_node.strip() == "":
-        st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
+        st.markdown('<div style="padding:10px;">ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.</div>', unsafe_allow_html=True)
     else:
         # ======================
         # Load Excel hanya saat Enter ditekan
@@ -110,7 +112,6 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered[col_ring].dropna().unique()
             for ring in ring_ids:
-                # Ring ID tetap scroll normal
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df[col_ring] == ring].copy()
@@ -216,13 +217,17 @@ if menu_option == "Topology":
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
-                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #c0c0c0 2px, transparent 2px), linear-gradient(to bottom, #c0c0c0 2px, transparent 2px); background-size: 50px 50px;}</style>'
+                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height + 350, scrolling=True)
+                st.components.v1.html(html_str, height=canvas_height+350, scrolling=False)
 
                 table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host] if c]
                 st.markdown("### 📋 Data Ring")
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
+
+    # Tutup div scrollable
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 elif menu_option == "Dashboard":
     st.markdown(
@@ -234,11 +239,12 @@ elif menu_option == "Dashboard":
         """,
         unsafe_allow_html=True
     )
+    # Load Excel untuk dashboard
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown(f"**Jumlah Ring:** {df[col_ring].nunique()}")
-    st.markdown(f"**Jumlah Site:** {df[col_site].nunique()}")
-    st.markdown(f"**Jumlah Destination:** {df[col_dest].nunique()}")
+    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
+    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
+    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
     st.dataframe(df.head(20))
