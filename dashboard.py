@@ -199,7 +199,16 @@ if menu_option == "Topology":
                         if t not in added_nodes:
                             net.add_node(t, label=t)
                             added_nodes.add(t)
-                        net.add_edge(s, t, label=str(flp_len) if flp_len else "", title=f"FLP LENGTH: {flp_len}", width=3, color="black")
+                        net.add_edge(
+    s,
+    t,
+    label=str(flp_len) if flp_len else "",
+    title=f"FLP LENGTH: {flp_len}",
+    width=3,
+    color="black",
+    smooth=False  # <- ini bikin garis kaku/tidak melengkung
+)
+
 
                 html_str = net.generate_html()
                 html_str = html_str.replace(
