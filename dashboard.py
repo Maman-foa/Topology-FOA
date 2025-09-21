@@ -109,9 +109,19 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
+                # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
+                # Tampilkan Member Ring di bawah subheader
                 ring_df = df[df["Ring ID"] == ring].copy()
+                if col_member_ring:
+                    members = ring_df[col_member_ring].dropna().astype(str).unique()
+                    members_str = ", ".join(members)
+                    st.markdown(
+                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {members_str}</p>',
+                        unsafe_allow_html=True
+                    )
+
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
@@ -207,7 +217,7 @@ if menu_option == "Topology":
                             title=f"FLP LENGTH: {flp_len}",
                             width=3,
                             color="red",
-                            smooth=False  # <- garis kaku
+                            smooth=False
                         )
 
                 html_str = net.generate_html()
@@ -216,13 +226,6 @@ if menu_option == "Topology":
                     '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
-
-                # ======================
-                # Tampilkan tabel Member Ring (dengan kolom Member Ring)
-                # ======================
-                table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host, col_member_ring] if c]
-                st.markdown("### 📋 Member Ring")
-                st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
     st.markdown(
