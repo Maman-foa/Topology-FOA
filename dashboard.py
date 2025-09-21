@@ -35,8 +35,6 @@ col1, col2, col3 = st.columns([1,2,2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology", "FLP Vendor"])
 
-canvas_height = 350
-
 # ======================
 # Helper function
 # ======================
@@ -61,6 +59,8 @@ if menu_option == "Topology":
             on_change=trigger_search
         )
 
+    canvas_height = 350
+
     st.markdown(
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
@@ -74,9 +74,7 @@ if menu_option == "Topology":
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
     else:
-        # ======================
-        # Load Excel hanya saat Enter ditekan
-        # ======================
+        # Load Excel
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
         sheet_name = 'Query'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
@@ -93,7 +91,7 @@ if menu_option == "Topology":
         col_syskey = get_col(df, "System Key")
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
-        col_member_ring = get_col(df, "Member Ring")
+        col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
 
         # Filter data sesuai keyword
         if search_by == "New Site ID":
@@ -236,14 +234,16 @@ if menu_option == "Topology":
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                # Tabel Excel Member Ring
+                # ======================
+                # Tabel Excel Member Ring di bawah canvas
+                # ======================
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
                 st.dataframe(display_df, use_container_width=True, height=300)
 
 # ======================
-# FLP Vendor
+# FLP Vendor (baru)
 # ======================
 elif menu_option == "FLP Vendor":
     st.markdown(
@@ -264,11 +264,13 @@ elif menu_option == "FLP Vendor":
     if vendor_input.strip() == "":
         st.info("ℹ️ Masukkan nama Vendor untuk menampilkan topology FLP Vendor.")
     else:
+        # Load Excel
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
         sheet_name = 'Query'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
         df.columns = df.columns.str.strip()
 
+        # Kolom helper
         col_site = get_col(df, "New Site ID")
         col_dest = get_col(df, "New Destenation", alt="New Destination")
         col_fiber = get_col(df, "Fiber Type")
@@ -276,6 +278,7 @@ elif menu_option == "FLP Vendor":
         col_host = get_col(df, "Host Name", alt="Hostname")
         col_flp = get_col(df, "FLP Vendor")
         col_flp_len = get_col(df, "FLP LENGTH")
+        col_ring = get_col(df, "Ring ID")
 
         vendor_df = df[df[col_flp].astype(str).str.contains(vendor_input, case=False, na=False)].copy()
 
@@ -285,74 +288,88 @@ elif menu_option == "FLP Vendor":
             vendor_df[col_site] = vendor_df[col_site].astype(str).str.strip()
             vendor_df[col_dest] = vendor_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
-            nodes_order = list(pd.unique(pd.concat([vendor_df[col_site], vendor_df[col_dest]], ignore_index=True)))
-            nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "none"]]
-
-            canvas_height = 600
+            canvas_height = 700
             net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
             net.toggle_physics(False)
 
-            # Posisi node (grid rapi)
+            # ======================
+            # Grid per Ring ID
+            # ======================
+            ring_ids = vendor_df[col_ring].dropna().unique()
             max_per_row = 8
             x_spacing = 200
             y_spacing = 200
             positions = {}
-            for i, nid in enumerate(nodes_order):
-                row = i // max_per_row
-                col_in_row = i % max_per_row
-                if row % 2 == 1:
-                    col = max_per_row - 1 - col_in_row
-                else:
-                    col = col_in_row
-                x = col * x_spacing
-                y = row * y_spacing
-                positions[nid] = (x, y)
-
-            # Tambah nodes dengan icon sama seperti topology
+            y_offset = 0
             added_nodes = set()
-            for _, r in vendor_df.iterrows():
-                s = str(r[col_site]).strip()
-                t = str(r[col_dest]).strip()
-                for nid in [s, t]:
-                    if nid and nid not in added_nodes:
-                        fiber = str(r[col_fiber]) if col_fiber in r and pd.notna(r[col_fiber]) else ""
-                        f_low = fiber.lower()
-                        node_image = (
-                            "https://img.icons8.com/ios-filled/50/007FFF/router.png" if f_low=="dark fiber" else
-                            "https://img.icons8.com/ios-filled/50/21793A/router.png" if f_low in ["p0","p0_1"] else
-                            "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
-                        )
-                        x, y = positions.get(nid, (0,0))
-                        label_parts = [fiber, nid]
-                        if col_site_name in r and pd.notna(r[col_site_name]):
-                            label_parts.append(r[col_site_name])
-                        if col_host in r and pd.notna(r[col_host]):
-                            label_parts.append(r[col_host])
-                        if col_flp in r and pd.notna(r[col_flp]):
-                            label_parts.append(r[col_flp])
-                        title = "<br>".join([p for p in label_parts if p])
-                        net.add_node(
-                            nid,
-                            label="\n".join(label_parts),
-                            x=x, y=y,
-                            physics=False,
-                            size=50,
-                            shape="image",
-                            image=node_image,
-                            color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
-                            title=title
-                        )
-                        added_nodes.add(nid)
 
-            # Tambah edges
-            for _, r in vendor_df.iterrows():
-                s = str(r[col_site]).strip()
-                t = str(r[col_dest]).strip()
-                if s and t:
-                    flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
-                    net.add_edge(s, t, label=str(flp_len) if flp_len else "")
+            for ring in ring_ids:
+                ring_df = vendor_df[vendor_df[col_ring] == ring]
+                nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
+                nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "none"]]
 
-            # Generate HTML + search box Site ID
+                for i, nid in enumerate(nodes_order):
+                    row = i // max_per_row
+                    col_in_row = i % max_per_row
+                    if row % 2 == 1:
+                        col = max_per_row - 1 - col_in_row
+                    else:
+                        col = col_in_row
+                    x = col * x_spacing
+                    y = y_offset + row * y_spacing
+                    positions[nid] = (x, y)
+
+                # Naikkan offset Y untuk ring berikutnya
+                y_offset += ((len(nodes_order)-1)//max_per_row + 1) * y_spacing + 100
+
+                # ======================
+                # Tambah node per ring
+                # ======================
+                for _, r in ring_df.iterrows():
+                    for nid in [str(r[col_site]).strip(), str(r[col_dest]).strip()]:
+                        if nid and nid not in added_nodes:
+                            fiber = str(r[col_fiber]) if col_fiber in r and pd.notna(r[col_fiber]) else ""
+                            f_low = fiber.lower()
+                            node_image = (
+                                "https://img.icons8.com/ios-filled/50/007FFF/router.png" if f_low=="dark fiber" else
+                                "https://img.icons8.com/ios-filled/50/21793A/router.png" if f_low in ["p0","p0_1"] else
+                                "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
+                            )
+                            x, y = positions.get(nid, (0,0))
+                            label_parts = [fiber, nid]
+                            if col_site_name in r and pd.notna(r[col_site_name]):
+                                label_parts.append(r[col_site_name])
+                            if col_host in r and pd.notna(r[col_host]):
+                                label_parts.append(r[col_host])
+                            if col_flp in r and pd.notna(r[col_flp]):
+                                label_parts.append(r[col_flp])
+                            title = "<br>".join([p for p in label_parts if p])
+                            net.add_node(
+                                nid,
+                                label="\n".join(label_parts),
+                                x=x, y=y,
+                                physics=False,
+                                size=50,
+                                shape="image",
+                                image=node_image,
+                                color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
+                                title=title
+                            )
+                            added_nodes.add(nid)
+
+                # ======================
+                # Tambah edge per ring
+                # ======================
+                for _, r in ring_df.iterrows():
+                    s = str(r[col_site]).strip()
+                    t = str(r[col_dest]).strip()
+                    if s and t:
+                        flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
+                        net.add_edge(s, t, label=str(flp_len) if flp_len else "")
+
+            # ======================
+            # Tambah search box Site ID
+            # ======================
             html_str = net.generate_html()
             search_js = """
             <input type="text" id="nodeSearch" placeholder="🔍 Cari Site ID..." 
