@@ -58,7 +58,6 @@ with col3:
         key="search_keyword",
         placeholder="Ketik lalu tekan Enter"
     )
-# tombol cari dihapus, jadi filter hanya jalan saat Enter ditekan
 
 # ======================
 # Helper kolom
@@ -99,7 +98,6 @@ def filter_data(keyword, by):
 # Main Area
 # ======================
 if menu_option == "Topology":
-    # Judul sticky
     st.markdown(
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
@@ -111,9 +109,9 @@ if menu_option == "Topology":
     )
 
     # ======================
-    # Jalankan filter hanya jika ada keyword di input (Enter)
+    # Jalankan filter hanya jika user sudah mengetik keyword
     # ======================
-    if search_node.strip() != "":
+    if search_node and search_node.strip():
         df_filtered = filter_data(search_node, search_by)
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
@@ -140,8 +138,10 @@ if menu_option == "Topology":
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
-                    if s: node_degree[s] = node_degree.get(s, 0) + 1
-                    if t: node_degree[t] = node_degree.get(t, 0) + 1
+                    if s:
+                        node_degree[s] = node_degree.get(s, 0) + 1
+                    if t:
+                        node_degree[t] = node_degree.get(t, 0) + 1
 
                 max_per_row = 8
                 x_spacing = 150
