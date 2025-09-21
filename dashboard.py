@@ -4,14 +4,14 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # ======================
-# Hilangkan padding default Streamlit dan sedikit turunkan Option
+# Hilangkan padding default Streamlit dan turunkan Option sedikit
 # ======================
 st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
     .block-container {
-        padding-top: 1rem;  /* Turunkan sedikit agar Option terlihat */
+        padding-top: 1rem;  /* Sedikit turunkan agar Option terlihat */
         padding-bottom: 0rem;
     }
     .canvas-border {
@@ -51,12 +51,17 @@ with col1:
 with col2:
     search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID"])
 with col3:
-    search_node = st.text_input("🔍 Masukkan keyword:")
+    if 'search_keyword' not in st.session_state:
+        st.session_state.search_keyword = ""
+    search_node = st.text_input(
+        "🔍 Masukkan keyword:",
+        key="search_keyword",
+        placeholder="Ketik lalu tekan Enter untuk mencari"
+    )
 
-# Lock tinggi kanvas
-canvas_height = 350
-
-# helper: ambil kolom jika ada, fallback ke nama alternatif
+# ======================
+# Helper kolom
+# ======================
 def get_col(df, name, alt=None):
     if name in df.columns:
         return name
@@ -76,6 +81,24 @@ col_dest_name = get_col(df, "Destination Name")
 col_ring = get_col(df, "Ring ID")
 
 # ======================
+# Lock tinggi kanvas
+# ======================
+canvas_height = 350
+
+# ======================
+# Fungsi filter data hanya saat Enter ditekan
+# ======================
+def filter_data():
+    if st.session_state.search_keyword.strip() == "":
+        return pd.DataFrame()
+    keyword = st.session_state.search_keyword.strip()
+    if search_by == "New Site ID":
+        mask = df[col_site].astype(str).str.contains(keyword, case=False, na=False)
+    else:
+        mask = df[col_ring].astype(str).str.contains(keyword, case=False, na=False)
+    return df[mask]
+
+# ======================
 # Main Area
 # ======================
 if menu_option == "Topology":
@@ -90,17 +113,10 @@ if menu_option == "Topology":
         unsafe_allow_html=True
     )
 
-    if not search_node:
-        st.info("ℹ️ Masukkan keyword untuk menampilkan topology.")
+    if st.session_state.search_keyword.strip() == "":
+        st.info("ℹ️ Masukkan keyword lalu tekan Enter untuk menampilkan topology.")
     else:
-        # Filter berdasarkan pilihan search
-        if search_by == "New Site ID":
-            mask = df[col_site].astype(str).str.contains(search_node, case=False, na=False)
-        else:  # Ring ID
-            mask = df[col_ring].astype(str).str.contains(search_node, case=False, na=False)
-
-        df_filtered = df[mask]
-
+        df_filtered = filter_data()
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
         else:
@@ -178,7 +194,7 @@ if menu_option == "Topology":
                     if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
                         fiber = "P0"
                     f_low = fiber.lower()
-                    # tetap menggunakan icon asli
+                    # icon tidak diubah
                     node_image = "https://img.icons8.com/ios-filled/50/router.png"
 
                     label_parts = [fiber, nid]
@@ -232,7 +248,6 @@ if menu_option == "Topology":
                     net.edges.append(e)
 
                 html_str = net.generate_html()
-                # Canvas dengan border tebal
                 html_str = html_str.replace(
                     '<body>',
                     '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), '
