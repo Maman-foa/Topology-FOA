@@ -61,7 +61,7 @@ def get_col(df, name, alt=None):
 # ======================
 if menu_option == "Topology":
     # ======================
-    # Judul nge-FREEZE di halaman
+    # Judul utama nge-FREEZE
     # ======================
     st.markdown(
         """
@@ -119,6 +119,7 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
+                # Ring ID tetap scroll normal
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
@@ -225,7 +226,7 @@ if menu_option == "Topology":
                     '<body>',
                     '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height, scrolling=True)
+                components.html(html_str, height=canvas_height, scrolling=False)
 
                 table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host] if c]
                 st.markdown("### 📋 Data Ring")
@@ -234,18 +235,10 @@ if menu_option == "Topology":
 elif menu_option == "Dashboard":
     st.markdown(
         """
-        <div style="
-            position: sticky;
-            top: 0;
-            background-color: white;
-            padding: 8px;
-            z-index: 999;
-            border-bottom: 1px solid #ddd;
-            font-size: 20px;
-            font-weight: bold;
-        ">
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
             📊 Dashboard Fiber Optic Active
-        </div>
+        </h2>
         """,
         unsafe_allow_html=True
     )
