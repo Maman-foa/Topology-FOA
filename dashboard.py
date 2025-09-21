@@ -24,8 +24,6 @@ if 'do_search' not in st.session_state:
     st.session_state.do_search = False
 if 'search_keyword' not in st.session_state:
     st.session_state.search_keyword = ""
-if 'search_by' not in st.session_state:
-    st.session_state.search_by = "New Site ID"
 
 def trigger_search():
     st.session_state.do_search = True
@@ -37,11 +35,7 @@ col1, col2, col3 = st.columns([1,2,2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
 with col2:
-    search_by = st.selectbox(
-        "Cari berdasarkan:",
-        ["New Site ID", "Ring ID", "Host Name"],
-        key="search_by"
-    )
+    search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
 with col3:
     search_node = st.text_input(
         "🔍 Masukkan keyword:",
@@ -100,7 +94,7 @@ if menu_option == "Topology":
         col_syskey = get_col(df, "System Key")
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
-        col_member_ring = get_col(df, "Member Ring")
+        col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
 
         # ======================
         # Filter data sesuai keyword
@@ -117,12 +111,13 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
+                # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
 
                 # ======================
-                # Member Ring (cek non-NaN)
+                # Tampilkan 1 Member Ring di bawah subheader (atau blank jika kosong)
                 # ======================
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
@@ -132,12 +127,14 @@ if menu_option == "Topology":
                         unsafe_allow_html=True
                     )
 
+                # ======================
+                # Bersihkan kolom Site/Destination
+                # ======================
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
-                ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
-                ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
+                ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-                nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "nan", "none"]]
+                nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "none"]]
                 valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
@@ -155,7 +152,7 @@ if menu_option == "Topology":
                         node_degree[t] = node_degree.get(t, 0) + 1
 
                 # ======================
-                # Node Zig-Zag
+                # Node zig-zag
                 # ======================
                 max_per_row = 8
                 x_spacing = 200
@@ -164,22 +161,13 @@ if menu_option == "Topology":
                 for i, nid in enumerate(nodes_order):
                     row = i // max_per_row
                     col_in_row = i % max_per_row
-                    if row % 2 == 1:
+                    if row % 2 == 1:  # baris genap → kanan ke kiri
                         col = max_per_row - 1 - col_in_row
-                    else:
+                    else:  # baris ganjil → kiri ke kanan
                         col = col_in_row
                     x = col * x_spacing
                     y = row * y_spacing
                     positions[nid] = (x, y)
-
-                # ======================
-                # Highlight keyword node
-                # ======================
-                highlight_nodes = set()
-                if search_node.strip():
-                    for nid in nodes_order:
-                        if search_node.strip().lower() in nid.lower():
-                            highlight_nodes.add(nid)
 
                 added_nodes = set()
                 def get_node_info(nid):
@@ -218,19 +206,15 @@ if menu_option == "Topology":
                     title = "<br>".join([p for p in label_parts if p])
 
                     x, y = positions.get(nid, (0,0))
-                    is_highlight = nid in highlight_nodes
                     net.add_node(
                         nid,
                         label="\n".join(label_parts),
                         x=x, y=y,
                         physics=False,
-                        size=60 if is_highlight else 50,
+                        size=50,
                         shape="image",
                         image=node_image,
-                        color={
-                            "border": "#000000" if is_highlight else ("007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2")),
-                            "background": "#FFA500" if is_highlight else "white"
-                        },
+                        color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
                         title=title
                     )
                     added_nodes.add(nid)
@@ -264,13 +248,12 @@ if menu_option == "Topology":
                 components.html(html_str, height=canvas_height, scrolling=False)
 
                 # ======================
-                # Tabel Excel per Ring
+                # Tabel Excel Member Ring di bawah canvas
                 # ======================
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
-                df_table = ring_df[table_cols].copy()
-                df_table = df_table.fillna("")
-                st.dataframe(df_table.reset_index(drop=True), use_container_width=True, height=300)
+                display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
+                st.dataframe(display_df, use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
     st.markdown(
@@ -282,6 +265,7 @@ elif menu_option == "Dashboard":
         """,
         unsafe_allow_html=True
     )
+    # Load Excel untuk dashboard
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
