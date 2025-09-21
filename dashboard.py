@@ -147,8 +147,8 @@ if menu_option == "Topology":
                         node_degree[t] = node_degree.get(t, 0) + 1
 
                 max_per_row = 8
-                x_spacing = 250
-                y_spacing = 250
+                x_spacing = 200
+                y_spacing = 200
                 positions = {nid: (i % max_per_row * x_spacing, i // max_per_row * y_spacing) for i, nid in enumerate(nodes_order)}
 
                 added_nodes = set()
