@@ -11,7 +11,7 @@ st.markdown(
     """
     <style>
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
-    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
+    .canvas-border { border: 3px solid #333333; border-radius: 5px; display: inline-block; }
     </style>
     """,
     unsafe_allow_html=True
@@ -235,12 +235,15 @@ if menu_option == "Topology":
                             smooth=False
                         )
 
+                # ======================
+                # Border pas dengan canvas
+                # ======================
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
                     '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height, scrolling=False)
+                components.html(html_str, height=canvas_height + 6, scrolling=False)  # +6 px untuk border
 
 elif menu_option == "Dashboard":
     st.markdown(
@@ -252,9 +255,11 @@ elif menu_option == "Dashboard":
         """,
         unsafe_allow_html=True
     )
-    # Load Excel untuk dashboard
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown
+    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
+    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
+    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
+    st.dataframe(df.head(20))
