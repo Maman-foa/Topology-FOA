@@ -1,5 +1,3 @@
-DARI SKRIP INI YA BUAT ZIGZAG NODE NYA
-
 import streamlit as st
 import pandas as pd
 from pyvis.network import Network
