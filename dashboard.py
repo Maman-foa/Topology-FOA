@@ -71,24 +71,7 @@ if menu_option == "Topology":
         unsafe_allow_html=True
     )
 
-    # Konten scrollable (PyVis + DataFrame)
-    content_html = "<div style='max-height:600px; overflow-y:auto;'>"
-    
-    if not st.session_state.do_search or search_node.strip() == "":
-        content_html += st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")._repr_html_()
-    else:
-        # ... generate PyVis + table HTML sama seperti skripmu ...
-        html_str = net.generate_html()
-        html_str = html_str.replace(
-            '<body>',
-            '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
-        )
-        content_html += html_str
-    
-    content_html += "</div>"
-    components.html(content_html, height=canvas_height+350, scrolling=False)
-
-
+    # Jika belum search
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
     else:
@@ -125,12 +108,12 @@ if menu_option == "Topology":
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
         else:
-            ring_ids = df_filtered["Ring ID"].dropna().unique()
+            ring_ids = df_filtered[col_ring].dropna().unique()
             for ring in ring_ids:
                 # Ring ID tetap scroll normal
                 st.subheader(f"🔗 Ring ID: {ring}")
 
-                ring_df = df[df["Ring ID"] == ring].copy()
+                ring_df = df[df[col_ring] == ring].copy()
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
@@ -200,6 +183,7 @@ if menu_option == "Topology":
                         label="\n".join(label_parts),
                         x=x, y=y,
                         physics=False,
+                        fixed=True,
                         size=50,
                         shape="image",
                         image=node_image,
@@ -214,10 +198,10 @@ if menu_option == "Topology":
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                         flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
-                            net.add_node(s, label=s)
+                            net.add_node(s, label=s, physics=False, fixed=True)
                             added_nodes.add(s)
                         if t not in added_nodes:
-                            net.add_node(t, label=t)
+                            net.add_node(t, label=t, physics=False, fixed=True)
                             added_nodes.add(t)
                         net.add_edge(
                             s,
@@ -232,9 +216,9 @@ if menu_option == "Topology":
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
-                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #c0c0c0 2px, transparent 2px), linear-gradient(to bottom, #c0c0c0 2px, transparent 2px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height, scrolling=False)
+                components.html(html_str, height=canvas_height + 350, scrolling=True)
 
                 table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host] if c]
                 st.markdown("### 📋 Data Ring")
@@ -254,7 +238,7 @@ elif menu_option == "Dashboard":
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
-    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
-    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
+    st.markdown(f"**Jumlah Ring:** {df[col_ring].nunique()}")
+    st.markdown(f"**Jumlah Site:** {df[col_site].nunique()}")
+    st.markdown(f"**Jumlah Destination:** {df[col_dest].nunique()}")
     st.dataframe(df.head(20))
