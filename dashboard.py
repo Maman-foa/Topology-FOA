@@ -25,7 +25,7 @@ if 'do_search' not in st.session_state:
 if 'search_keyword' not in st.session_state:
     st.session_state.search_keyword = ""
 if 'search_by' not in st.session_state:
-    st.session_state.search_by = "Site ID"
+    st.session_state.search_by = "New Site ID"
 
 def trigger_search():
     st.session_state.do_search = True
@@ -117,7 +117,6 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
-                # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
@@ -229,8 +228,8 @@ if menu_option == "Topology":
                         shape="image",
                         image=node_image,
                         color={
-                            "border": "FF0000" if is_highlight else ("007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2")),
-                            "background": "yellow" if is_highlight else "black"
+                            "border": "#000000" if is_highlight else ("007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2")),
+                            "background": "#FFA500" if is_highlight else "white"
                         },
                         title=title
                     )
@@ -270,7 +269,6 @@ if menu_option == "Topology":
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 df_table = ring_df[table_cols].copy()
-                # Blank untuk NaN
                 df_table = df_table.fillna("")
                 st.dataframe(df_table.reset_index(drop=True), use_container_width=True, height=300)
 
