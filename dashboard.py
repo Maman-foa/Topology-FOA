@@ -4,6 +4,22 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # ======================
+# Hilangkan padding default Streamlit
+# ======================
+st.set_page_config(layout="wide")
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ======================
 # Bersihkan cache lama
 # ======================
 st.cache_data.clear()
@@ -23,10 +39,13 @@ def load_data():
 df = load_data()
 
 # ======================
-# Sidebar (dihilangkan, langsung default Topology)
+# Menu + Search di atas
 # ======================
-menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"], horizontal=True)
-search_node = st.text_input("🔍 Cari New Site ID / Destination:")
+col1, col2 = st.columns([1,2])
+with col1:
+    menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
+with col2:
+    search_node = st.text_input("🔍 Cari New Site ID / Destination:")
 
 # Lock tinggi kanvas
 canvas_height = 350
@@ -56,8 +75,8 @@ if menu_option == "Topology":
     # Judul sticky
     st.markdown(
         """
-        <h2 style="position:sticky; top:0; background-color:white; padding:8px; 
-                   z-index:999; border-bottom:1px solid #ddd;">
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
             🌐 Topology Fiber Optic Active
         </h2>
         """,
@@ -86,9 +105,7 @@ if menu_option == "Topology":
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
-                # ======================
-                # Topology dengan tinggi fix 350px
-                # ======================
+                # Ambil node unik
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
                 nodes_order = [
                     str(n).strip()
@@ -99,10 +116,11 @@ if menu_option == "Topology":
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
+                net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8",
+                              font_color="black", directed=False)
                 net.toggle_physics(False)
 
-                # Degree nodes
+                # Degree node
                 node_degree = {}
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
@@ -112,7 +130,7 @@ if menu_option == "Topology":
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # Grid position
+                # Grid layout
                 max_per_row = 8
                 x_spacing = 150
                 y_spacing = 150
@@ -167,7 +185,7 @@ if menu_option == "Topology":
                         label_parts.append(info["FLP Vendor"])
                     title = "<br>".join([p for p in label_parts if p])
 
-                    x, y = positions.get(nid, (0,0))
+                    x, y = positions.get(nid, (0, 0))
                     net.add_node(
                         nid,
                         label="\n".join(label_parts),
@@ -212,19 +230,17 @@ if menu_option == "Topology":
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
-                    '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+                    '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), '
+                    'linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height, scrolling=True)
+                components.html(html_str, height=canvas_height, scrolling=False)
 
-                # ======================
-                # Tabel di bawah kanvas (tidak sticky)
-                # ======================
+                # Data Ring (tidak sticky)
                 st.markdown("## 📋 Data Ring")
                 table_cols = [c for c in [
                     col_syskey, col_flp, col_site, col_site_name,
                     col_dest, col_dest_name, col_fiber, col_host
                 ] if c is not None]
-
                 st.dataframe(
                     ring_df[table_cols].reset_index(drop=True),
                     use_container_width=True,
@@ -232,11 +248,11 @@ if menu_option == "Topology":
                 )
 
 elif menu_option == "Dashboard":
-    # Judul sticky
+    # Judul sticky dashboard
     st.markdown(
         """
-        <h2 style="position:sticky; top:0; background-color:white; padding:8px; 
-                   z-index:999; border-bottom:1px solid #ddd;">
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
             📊 Dashboard Fiber Optic Active
         </h2>
         """,
