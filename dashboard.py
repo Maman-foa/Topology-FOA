@@ -60,27 +60,21 @@ def get_col(df, name, alt=None):
 # Main Area
 # ======================
 if menu_option == "Topology":
-    # Judul sticky di luar PyVis
-    st.markdown(
-        """
-        <div style="position:sticky; top:0; background-color:white; padding:8px;
-                    z-index:999; border-bottom:1px solid #ddd;">
-            🧬 Topology Fiber Optic Active
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
     else:
+        # ======================
         # Load Excel hanya saat Enter ditekan
+        # ======================
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
         sheet_name = 'Query'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
         df.columns = df.columns.str.strip()
 
+        # ======================
         # Kolom helper
+        # ======================
         col_site = get_col(df, "New Site ID")
         col_dest = get_col(df, "New Destenation", alt="New Destination")
         col_fiber = get_col(df, "Fiber Type")
@@ -92,7 +86,9 @@ if menu_option == "Topology":
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
 
+        # ======================
         # Filter data sesuai keyword
+        # ======================
         if search_by == "New Site ID":
             df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
         else:
@@ -201,13 +197,38 @@ if menu_option == "Topology":
                             title=f"FLP LENGTH: {flp_len}",
                             width=3,
                             color="red",
-                            smooth=False
+                            smooth=False  # garis kaku
                         )
 
+                # ======================
+                # Render PyVis + judul nge-FREEZE
+                # ======================
                 html_str = net.generate_html()
                 html_str = html_str.replace(
                     '<body>',
-                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+                    '''
+                    <body>
+                    <div style="
+                        position: sticky; 
+                        top: 0; 
+                        background-color: white; 
+                        z-index: 999; 
+                        padding: 8px; 
+                        border-bottom: 1px solid #ddd;
+                        font-size: 20px;
+                        font-weight: bold;
+                    ">
+                        🧬 Topology Fiber Optic Active
+                    </div>
+                    <div class="canvas-border">
+                    <style>
+                        .vis-network{
+                            background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px),
+                                              linear-gradient(to bottom, #d0d0d0 1px, transparent 1px);
+                            background-size: 50px 50px;
+                        }
+                    </style>
+                    '''
                 )
                 components.html(html_str, height=canvas_height, scrolling=True)
 
@@ -216,17 +237,16 @@ if menu_option == "Topology":
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
-    # Judul sticky di luar
     st.markdown(
         """
-        <div style="position:sticky; top:0; background-color:white; padding:8px;
-                    z-index:999; border-bottom:1px solid #ddd;">
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
             📊 Dashboard Fiber Optic Active
-        </div>
+        </h2>
         """,
         unsafe_allow_html=True
     )
-
+    # Load Excel untuk dashboard
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
