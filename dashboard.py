@@ -109,9 +109,11 @@ if menu_option == "Topology":
     )
 
     # ======================
-    # Jalankan filter hanya jika user sudah mengetik keyword
+    # Tampilkan pesan jika keyword kosong
     # ======================
-    if search_node and search_node.strip():
+    if not search_node or search_node.strip() == "":
+        st.info("ℹ️ Masukkan **keyword** di sebelah kanan (New Site ID atau Ring ID) lalu tekan Enter untuk menampilkan topology.")
+    else:
         df_filtered = filter_data(search_node, search_by)
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
