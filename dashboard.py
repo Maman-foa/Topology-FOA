@@ -4,15 +4,19 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # ======================
-# Hilangkan padding default Streamlit
+# Hilangkan padding default Streamlit dan sedikit turunkan Option
 # ======================
 st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
     .block-container {
-        padding-top: 0rem;
+        padding-top: 1rem;  /* Turunkan sedikit agar Option terlihat */
         padding-bottom: 0rem;
+    }
+    .canvas-border {
+        border: 3px solid #333333;  /* Border tebal untuk canvas */
+        border-radius: 5px;
     }
     </style>
     """,
@@ -41,11 +45,13 @@ df = load_data()
 # ======================
 # Menu + Search di atas
 # ======================
-col1, col2 = st.columns([1,2])
+col1, col2, col3 = st.columns([1,2,2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
 with col2:
-    search_node = st.text_input("🔍 Cari New Site ID / Destination:")
+    search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID"])
+with col3:
+    search_node = st.text_input("🔍 Masukkan keyword:")
 
 # Lock tinggi kanvas
 canvas_height = 350
@@ -67,6 +73,7 @@ col_flp = get_col(df, "FLP Vendor")
 col_flp_len = get_col(df, "FLP LENGTH")
 col_syskey = get_col(df, "System Key")
 col_dest_name = get_col(df, "Destination Name")
+col_ring = get_col(df, "Ring ID")
 
 # ======================
 # Main Area
@@ -84,12 +91,14 @@ if menu_option == "Topology":
     )
 
     if not search_node:
-        st.info("ℹ️ Masukkan **Site ID / Destination** untuk menampilkan topology.")
+        st.info("ℹ️ Masukkan keyword untuk menampilkan topology.")
     else:
-        mask = (
-            df[col_site].astype(str).str.contains(search_node, case=False, na=False) |
-            df[col_dest].astype(str).str.contains(search_node, case=False, na=False)
-        )
+        # Filter berdasarkan pilihan search
+        if search_by == "New Site ID":
+            mask = df[col_site].astype(str).str.contains(search_node, case=False, na=False)
+        else:  # Ring ID
+            mask = df[col_ring].astype(str).str.contains(search_node, case=False, na=False)
+
         df_filtered = df[mask]
 
         if df_filtered.empty:
@@ -156,7 +165,7 @@ if menu_option == "Topology":
                         "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                     }
 
-                # Tambahkan node
+                # Tambahkan node (icon tetap)
                 for nid in nodes_order:
                     nid = str(nid).strip()
                     if not nid or nid.lower() in ["nan", "none"]:
@@ -169,12 +178,8 @@ if menu_option == "Topology":
                     if node_degree.get(nid, 0) == 1 and str(fiber).strip().lower() not in ["p0_1"]:
                         fiber = "P0"
                     f_low = fiber.lower()
-                    if f_low == "dark fiber":
-                        node_image = "https://img.icons8.com/ios-filled/50/007FFF/router.png"
-                    elif f_low in ["p0", "p0_1"]:
-                        node_image = "https://img.icons8.com/ios-filled/50/21793A/router.png"
-                    else:
-                        node_image = "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
+                    # tetap menggunakan icon asli
+                    node_image = "https://img.icons8.com/ios-filled/50/router.png"
 
                     label_parts = [fiber, nid]
                     if info["Site Name"]:
@@ -194,8 +199,7 @@ if menu_option == "Topology":
                         size=50,
                         shape="image",
                         image=node_image,
-                        color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"),
-                               "background": "white"},
+                        color={"border": "007FFF", "background": "white"},
                         title=title
                     )
                     added_nodes.add(nid)
@@ -228,11 +232,12 @@ if menu_option == "Topology":
                     net.edges.append(e)
 
                 html_str = net.generate_html()
+                # Canvas dengan border tebal
                 html_str = html_str.replace(
                     '<body>',
-                    '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), '
+                    '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), '
                     'linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
-                )
+                ).replace('</body>', '</div></body>')
                 components.html(html_str, height=canvas_height, scrolling=False)
 
                 # Data Ring (tidak sticky)
