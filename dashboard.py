@@ -4,43 +4,29 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # ======================
-# Hilangkan padding default Streamlit
+# Page config & CSS
 # ======================
 st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 0rem;
-    }
-    .canvas-border {
-        border: 3px solid #333333;
-        border-radius: 5px;
-    }
+    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # ======================
-# Bersihkan cache lama
+# Session state
 # ======================
-st.cache_data.clear()
+if 'do_search' not in st.session_state:
+    st.session_state.do_search = False
+if 'search_keyword' not in st.session_state:
+    st.session_state.search_keyword = ""
 
-# ======================
-# Konfigurasi file
-# ======================
-file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
-sheet_name = 'Query'
-
-@st.cache_data
-def load_data():
-    df_local = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
-    df_local.columns = df_local.columns.str.strip()
-    return df_local
-
-df = load_data()
+def trigger_search():
+    st.session_state.do_search = True
 
 # ======================
 # Menu + Search
@@ -51,16 +37,17 @@ with col1:
 with col2:
     search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID"])
 with col3:
-    if 'search_keyword' not in st.session_state:
-        st.session_state.search_keyword = ""
     search_node = st.text_input(
         "🔍 Masukkan keyword:",
         key="search_keyword",
-        placeholder="Ketik lalu tekan Enter"
+        placeholder="Ketik lalu tekan Enter",
+        on_change=trigger_search
     )
 
+canvas_height = 350
+
 # ======================
-# Helper kolom
+# Helper function
 # ======================
 def get_col(df, name, alt=None):
     if name in df.columns:
@@ -68,31 +55,6 @@ def get_col(df, name, alt=None):
     if alt and alt in df.columns:
         return alt
     return None
-
-col_site = get_col(df, "New Site ID")
-col_dest = get_col(df, "New Destenation", alt="New Destination")
-col_fiber = get_col(df, "Fiber Type")
-col_site_name = get_col(df, "Site Name")
-col_host = get_col(df, "Host Name", alt="Hostname")
-col_flp = get_col(df, "FLP Vendor")
-col_flp_len = get_col(df, "FLP LENGTH")
-col_syskey = get_col(df, "System Key")
-col_dest_name = get_col(df, "Destination Name")
-col_ring = get_col(df, "Ring ID")
-
-canvas_height = 350
-
-# ======================
-# Fungsi filter data
-# ======================
-def filter_data(keyword, by):
-    if keyword.strip() == "":
-        return pd.DataFrame()
-    if by == "New Site ID":
-        mask = df[col_site].astype(str).str.contains(keyword, case=False, na=False)
-    else:
-        mask = df[col_ring].astype(str).str.contains(keyword, case=False, na=False)
-    return df[mask]
 
 # ======================
 # Main Area
@@ -108,13 +70,39 @@ if menu_option == "Topology":
         unsafe_allow_html=True
     )
 
-    # ======================
-    # Tampilkan pesan jika keyword kosong
-    # ======================
-    if not search_node or search_node.strip() == "":
-        st.info("ℹ️ Masukkan **keyword** di sebelah kanan (New Site ID atau Ring ID) lalu tekan Enter untuk menampilkan topology.")
+    if not st.session_state.do_search or search_node.strip() == "":
+        st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
     else:
-        df_filtered = filter_data(search_node, search_by)
+        # ======================
+        # Load Excel hanya saat Enter ditekan
+        # ======================
+        file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
+        sheet_name = 'Query'
+        df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
+        df.columns = df.columns.str.strip()
+
+        # ======================
+        # Kolom helper
+        # ======================
+        col_site = get_col(df, "New Site ID")
+        col_dest = get_col(df, "New Destenation", alt="New Destination")
+        col_fiber = get_col(df, "Fiber Type")
+        col_site_name = get_col(df, "Site Name")
+        col_host = get_col(df, "Host Name", alt="Hostname")
+        col_flp = get_col(df, "FLP Vendor")
+        col_flp_len = get_col(df, "FLP LENGTH")
+        col_syskey = get_col(df, "System Key")
+        col_dest_name = get_col(df, "Destination Name")
+        col_ring = get_col(df, "Ring ID")
+
+        # ======================
+        # Filter data sesuai keyword
+        # ======================
+        if search_by == "New Site ID":
+            df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
+        else:
+            df_filtered = df[df[col_ring].astype(str).str.contains(search_node, case=False, na=False)]
+
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
         else:
@@ -234,6 +222,11 @@ elif menu_option == "Dashboard":
         """,
         unsafe_allow_html=True
     )
+    # Load Excel untuk dashboard
+    file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
+    sheet_name = 'Query'
+    df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
+    df.columns = df.columns.str.strip()
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
     st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
