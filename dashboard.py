@@ -60,26 +60,34 @@ def get_col(df, name, alt=None):
 # Main Area
 # ======================
 if menu_option == "Topology":
-    # ======================
-    # Judul utama nge-FREEZE
-    # ======================
+    # Judul utama freeze
     st.markdown(
         """
-        <div style="
-            position: sticky;
-            top: 0;
-            background-color: white;
-            padding: 8px;
-            z-index: 999;
-            border-bottom: 1px solid #ddd;
-            font-size: 20px;
-            font-weight: bold;
-        ">
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
             🧬 Topology Fiber Optic Active
-        </div>
+        </h2>
         """,
         unsafe_allow_html=True
     )
+
+    # Konten scrollable (PyVis + DataFrame)
+    content_html = "<div style='max-height:600px; overflow-y:auto;'>"
+    
+    if not st.session_state.do_search or search_node.strip() == "":
+        content_html += st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")._repr_html_()
+    else:
+        # ... generate PyVis + table HTML sama seperti skripmu ...
+        html_str = net.generate_html()
+        html_str = html_str.replace(
+            '<body>',
+            '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+        )
+        content_html += html_str
+    
+    content_html += "</div>"
+    components.html(content_html, height=canvas_height+350, scrolling=False)
+
 
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
