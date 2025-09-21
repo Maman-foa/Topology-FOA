@@ -1,3 +1,27 @@
+import streamlit as st
+import pandas as pd
+from pyvis.network import Network
+import streamlit.components.v1 as components
+
+# ======================
+# Hilangkan padding default Streamlit
+# ======================
+st.set_page_config(layout="wide")
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 1rem;  /* Turunkan agar menu terlihat */
+        padding-bottom: 0rem;
+    }
+    .canvas-border {
+        border: 3px solid #333333;
+        border-radius: 5px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # ======================
 # Main Area
 # ======================
@@ -170,3 +194,18 @@ if menu_option == "Topology":
                     use_container_width=True,
                     height=300
                 )
+
+elif menu_option == "Dashboard":
+    st.markdown(
+        """
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
+                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
+            📊 Dashboard Fiber Optic Active
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
+    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
+    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
+    st.dataframe(df.head(20))
