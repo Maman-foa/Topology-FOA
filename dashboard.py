@@ -33,7 +33,7 @@ def trigger_search():
 # ======================
 col1, col2, col3 = st.columns([1,2,2])
 with col1:
-    menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
+    menu_option = st.radio("Pilih Tampilan:", ["Topology", "Map"])
 with col2:
     search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
 with col3:
@@ -256,9 +256,9 @@ if menu_option == "Topology":
                 st.dataframe(display_df, use_container_width=True, height=300)
 
 # ======================
-# Dashboard -> Map
+# Map
 # ======================
-elif menu_option == "Dashboard":
+elif menu_option == "Map":
     st.markdown(
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
