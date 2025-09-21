@@ -161,9 +161,9 @@ if menu_option == "Topology":
                 for i, nid in enumerate(nodes_order):
                     row = i // max_per_row
                     col_in_row = i % max_per_row
-                    if row % 2 == 1:  # baris genap → kanan ke kiri
+                    if row % 2 == 1:
                         col = max_per_row - 1 - col_in_row
-                    else:  # baris ganjil → kiri ke kanan
+                    else:
                         col = col_in_row
                     x = col * x_spacing
                     y = row * y_spacing
@@ -255,22 +255,59 @@ if menu_option == "Topology":
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
                 st.dataframe(display_df, use_container_width=True, height=300)
 
+# ======================
+# Dashboard -> Map
+# ======================
 elif menu_option == "Dashboard":
     st.markdown(
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
                    z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            📊 Dashboard Fiber Optic Active
+            🗺️ Map Fiber Optic Active
         </h2>
         """,
         unsafe_allow_html=True
     )
-    # Load Excel untuk dashboard
+    # Load Excel untuk Map
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
-    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
-    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
-    st.dataframe(df.head(20))
+
+    lat_col = get_col(df, "Latitude")
+    lon_col = get_col(df, "Longitude")
+
+    if lat_col is None or lon_col is None:
+        st.warning("⚠️ Data belum memiliki kolom Latitude & Longitude untuk Map.")
+    else:
+        import folium
+        from streamlit_folium import st_folium
+
+        center_lat = df[lat_col].mean()
+        center_lon = df[lon_col].mean()
+
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=5)
+
+        for _, row in df.iterrows():
+            site = row.get("New Site ID", "")
+            site_name = row.get("Site Name", "")
+            host = row.get("Host Name", "")
+            flp = row.get("FLP Vendor", "")
+            ring = row.get("Ring ID", "")
+            lat = row.get(lat_col)
+            lon = row.get(lon_col)
+            if pd.notna(lat) and pd.notna(lon):
+                popup_text = f"""
+                <b>Site ID:</b> {site}<br>
+                <b>Site Name:</b> {site_name}<br>
+                <b>Host Name:</b> {host}<br>
+                <b>FLP Vendor:</b> {flp}<br>
+                <b>Ring ID:</b> {ring}
+                """
+                folium.Marker(
+                    location=[lat, lon],
+                    popup=folium.Popup(popup_text, max_width=300),
+                    icon=folium.Icon(color="blue", icon="info-sign")
+                ).add_to(m)
+
+        st_folium(m, width=1200, height=600)
