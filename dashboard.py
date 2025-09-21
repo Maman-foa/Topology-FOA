@@ -94,6 +94,7 @@ if menu_option == "Topology":
         col_syskey = get_col(df, "System Key")
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
+        col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
 
         # ======================
         # Filter data sesuai keyword
@@ -200,15 +201,14 @@ if menu_option == "Topology":
                             net.add_node(t, label=t)
                             added_nodes.add(t)
                         net.add_edge(
-    s,
-    t,
-    label=str(flp_len) if flp_len else "",
-    title=f"FLP LENGTH: {flp_len}",
-    width=3,
-    color="red",
-    smooth=False  # <- ini bikin garis kaku/tidak melengkung
-)
-
+                            s,
+                            t,
+                            label=str(flp_len) if flp_len else "",
+                            title=f"FLP LENGTH: {flp_len}",
+                            width=3,
+                            color="red",
+                            smooth=False  # <- garis kaku
+                        )
 
                 html_str = net.generate_html()
                 html_str = html_str.replace(
@@ -217,7 +217,10 @@ if menu_option == "Topology":
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host] if c]
+                # ======================
+                # Tampilkan tabel Member Ring (dengan kolom Member Ring)
+                # ======================
+                table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host, col_member_ring] if c]
                 st.markdown("### 📋 Member Ring")
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
