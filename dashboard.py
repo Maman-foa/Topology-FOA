@@ -257,7 +257,7 @@ elif menu_option == "Map":
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
                    z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🗺️ Map SOW Indonesia
+            🗺️ Map province Indonesia
         </h2>
         """,
         unsafe_allow_html=True
@@ -269,10 +269,10 @@ elif menu_option == "Map":
     df.columns = df.columns.str.strip()
 
     col_prov = get_col(df, "province")
-    col_sow = get_col(df, "SOW")
+    col_province = get_col(df, "province")
 
-    if col_prov and col_sow:
-        df_map = df.groupby(col_prov)[col_sow].sum().reset_index()
+    if col_prov and col_province:
+        df_map = df.groupby(col_prov)[col_province].sum().reset_index()
         df_map[col_prov] = df_map[col_prov].str.strip()
 
         import plotly.express as px
@@ -281,14 +281,14 @@ elif menu_option == "Map":
             geojson="https://raw.githubusercontent.com/rozza/indonesia-geojson/master/indonesia-province.geojson",
             locations=col_prov,
             featureidkey="properties.name",
-            color=col_sow,
+            color=col_province,
             color_continuous_scale="Oranges",
-            labels={col_sow:"Jumlah SOW"},
-            title="Jumlah SOW per province"
+            labels={col_province:"Jumlah province"},
+            title="Jumlah province per province"
         )
         fig.update_geos(fitbounds="locations", visible=False)
         fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
 
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("⚠️ Kolom province atau SOW tidak ditemukan di Excel.")
+        st.warning("⚠️ Kolom province atau province tidak ditemukan di Excel.")
