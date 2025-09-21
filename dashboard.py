@@ -94,7 +94,7 @@ if menu_option == "Topology":
         col_syskey = get_col(df, "System Key")
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
-        col_member_ring = get_col(df, "Member Ring")  # <- tambahan
+        col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
 
         # ======================
         # Filter data sesuai keyword
@@ -109,12 +109,12 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
+                # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
-                
                 # ======================
-                # Member Ring muncul di bawah Ring ID
+                # Tampilkan 1 Member Ring di bawah subheader (atau blank jika kosong)
                 # ======================
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
@@ -146,19 +146,19 @@ if menu_option == "Topology":
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # ======================
-                # Zig-zag positions dan jarak node
-                # ======================
+                max_per_row = 8
                 x_spacing = 200
                 y_spacing = 200
-                max_per_row = 8
+                # ======================
+                # Zig-zag positions
+                # ======================
                 positions = {}
                 for i, nid in enumerate(nodes_order):
                     row = i // max_per_row
                     col_in_row = i % max_per_row
-                    if row % 2 == 1:  # baris ganjil → kanan ke kiri
+                    if row % 2 == 1:  # baris genap → kanan ke kiri
                         col = max_per_row - 1 - col_in_row
-                    else:  # baris genap → kiri ke kanan
+                    else:  # baris ganjil → kiri ke kanan
                         col = col_in_row
                     x = col * x_spacing
                     y = row * y_spacing
@@ -257,7 +257,4 @@ elif menu_option == "Dashboard":
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
-    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
-    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
-    st.dataframe(df.head(20))
+    st.markdown
