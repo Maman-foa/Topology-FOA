@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
+import plotly.express as px
 
 # ======================
 # Page config & CSS
@@ -79,17 +80,13 @@ if menu_option == "Topology":
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
     else:
-        # ======================
-        # Load Excel hanya saat Enter ditekan
-        # ======================
+        # Load Excel
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
         sheet_name = 'Query'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
         df.columns = df.columns.str.strip()
 
-        # ======================
         # Kolom helper
-        # ======================
         col_site = get_col(df, "New Site ID")
         col_dest = get_col(df, "New Destenation", alt="New Destination")
         col_fiber = get_col(df, "Fiber Type")
@@ -102,9 +99,7 @@ if menu_option == "Topology":
         col_ring = get_col(df, "Ring ID")
         col_member_ring = get_col(df, "Member Ring")
 
-        # ======================
         # Filter data sesuai keyword
-        # ======================
         if search_by == "New Site ID":
             df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
         elif search_by == "Ring ID":
@@ -263,32 +258,33 @@ elif menu_option == "Map":
         unsafe_allow_html=True
     )
 
+    # Load Excel
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
 
+    # Kolom provinsi
     col_prov = get_col(df, "province")
-    col_province = get_col(df, "province")
 
-    if col_prov and col_province:
-        df_map = df.groupby(col_prov)[col_province].sum().reset_index()
+    if col_prov:
+        # Hitung jumlah baris per provinsi
+        df_map = df.groupby(col_prov).size().reset_index(name='count')
         df_map[col_prov] = df_map[col_prov].str.strip()
 
-        import plotly.express as px
         fig = px.choropleth(
             df_map,
             geojson="https://raw.githubusercontent.com/rozza/indonesia-geojson/master/indonesia-province.geojson",
             locations=col_prov,
             featureidkey="properties.name",
-            color=col_province,
+            color='count',  # pakai kolom count dari size()
             color_continuous_scale="Oranges",
-            labels={col_province:"Jumlah province"},
-            title="Jumlah province per province"
+            labels={'count':"Jumlah SOW"},
+            title="Jumlah SOW per province"
         )
         fig.update_geos(fitbounds="locations", visible=False)
         fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
 
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("⚠️ Kolom province atau province tidak ditemukan di Excel.")
+        st.warning("⚠️ Kolom province tidak ditemukan di Excel.")
