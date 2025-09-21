@@ -112,11 +112,12 @@ if menu_option == "Topology":
                 # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
-                # Tampilkan Member Ring di bawah subheader
                 ring_df = df[df["Ring ID"] == ring].copy()
-                if col_member_ring:
-                    members = ring_df[col_member_ring].dropna().astype(str).unique()
-                    members_str = ", ".join(members)
+                # ======================
+                # Tampilkan 1 Member Ring di bawah subheader
+                # ======================
+                if col_member_ring and not ring_df.empty:
+                    members_str = str(ring_df[col_member_ring].dropna().iloc[0])
                     st.markdown(
                         f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {members_str}</p>',
                         unsafe_allow_html=True
