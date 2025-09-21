@@ -250,7 +250,7 @@ if menu_option == "Topology":
                 st.dataframe(display_df, use_container_width=True, height=300)
 
 # ======================
-# Map Indonesia per Province
+# Map Indonesia per province
 # ======================
 elif menu_option == "Map":
     st.markdown(
@@ -268,7 +268,7 @@ elif menu_option == "Map":
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
 
-    col_prov = get_col(df, "Province")
+    col_prov = get_col(df, "province")
     col_sow = get_col(df, "SOW")
 
     if col_prov and col_sow:
@@ -284,11 +284,11 @@ elif menu_option == "Map":
             color=col_sow,
             color_continuous_scale="Oranges",
             labels={col_sow:"Jumlah SOW"},
-            title="Jumlah SOW per Province"
+            title="Jumlah SOW per province"
         )
         fig.update_geos(fitbounds="locations", visible=False)
         fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
 
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("⚠️ Kolom Province atau SOW tidak ditemukan di Excel.")
+        st.warning("⚠️ Kolom province atau SOW tidak ditemukan di Excel.")
