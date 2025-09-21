@@ -29,6 +29,12 @@ st.sidebar.header("⚙️ Menu")
 menu_option = st.sidebar.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
 search_node = st.sidebar.text_input("🔍 Cari New Site ID / Destination:")
 
+# Tambahkan slider untuk tinggi kanvas
+canvas_height = st.sidebar.slider(
+    "Tinggi Kanvas Topology (px)", 
+    min_value=300, max_value=900, value=450, step=50
+)
+
 # helper: ambil kolom jika ada, fallback ke nama alternatif
 def get_col(df, name, alt=None):
     if name in df.columns:
@@ -56,7 +62,6 @@ if menu_option == "Topology":
     if not search_node:
         st.info("ℹ️ Masukkan **Site ID / Destination** di sidebar untuk menampilkan topology.")
     else:
-        # Filter source data berdasarkan search
         mask = (
             df[col_site].astype(str).str.contains(search_node, case=False, na=False) |
             df[col_dest].astype(str).str.contains(search_node, case=False, na=False)
@@ -74,12 +79,10 @@ if menu_option == "Topology":
                 ring_df = df[df["Ring ID"] == ring].copy()
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip()
-
-                # hilangkan baris dengan destination kosong
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
                 # ======================
-                # Topology (kanvas lebih pendek)
+                # Topology dengan tinggi dinamis
                 # ======================
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
                 nodes_order = [
@@ -91,10 +94,10 @@ if menu_option == "Topology":
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                net = Network(height="600px", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
+                net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
                 net.toggle_physics(False)
 
-                # degree
+                # Degree nodes
                 node_degree = {}
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
@@ -104,7 +107,7 @@ if menu_option == "Topology":
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # grid positions
+                # Grid position
                 max_per_row = 8
                 x_spacing = 150
                 y_spacing = 150
@@ -206,7 +209,7 @@ if menu_option == "Topology":
                     '<body>',
                     '<body><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=600, scrolling=True)
+                components.html(html_str, height=canvas_height, scrolling=True)
 
                 # ======================
                 # Tabel di bawah kanvas
