@@ -218,7 +218,7 @@ if menu_option == "Topology":
                 components.html(html_str, height=canvas_height, scrolling=False)
 
                 table_cols = [c for c in [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_host] if c]
-                st.markdown("### 📋 Data Ring")
+                st.markdown("### 📋 Member Ring")
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
