@@ -230,7 +230,7 @@ if menu_option == "Topology":
                         image=node_image,
                         color={
                             "border": "FF0000" if is_highlight else ("007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2")),
-                            "background": "yellow" if is_highlight else "white"
+                            "background": "yellow" if is_highlight else "black"
                         },
                         title=title
                     )
