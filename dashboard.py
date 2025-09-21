@@ -243,7 +243,7 @@ if menu_option == "Topology":
                     '<body>',
                     '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
                 )
-                components.html(html_str, height=canvas_height + 6, scrolling=False)  # +6 px untuk border
+                components.html(html_str, height=canvas_height + 4, scrolling=False)  # +6 px untuk border
 
 elif menu_option == "Dashboard":
     st.markdown(
