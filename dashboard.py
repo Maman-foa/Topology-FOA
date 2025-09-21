@@ -149,7 +149,20 @@ if menu_option == "Topology":
                 max_per_row = 8
                 x_spacing = 200
                 y_spacing = 200
-                positions = {nid: (i % max_per_row * x_spacing, i // max_per_row * y_spacing) for i, nid in enumerate(nodes_order)}
+                # ======================
+                # Zig-zag positions
+                # ======================
+                positions = {}
+                for i, nid in enumerate(nodes_order):
+                    row = i // max_per_row
+                    col_in_row = i % max_per_row
+                    if row % 2 == 1:  # baris genap → kanan ke kiri
+                        col = max_per_row - 1 - col_in_row
+                    else:  # baris ganjil → kiri ke kanan
+                        col = col_in_row
+                    x = col * x_spacing
+                    y = row * y_spacing
+                    positions[nid] = (x, y)
 
                 added_nodes = set()
                 def get_node_info(nid):
@@ -244,7 +257,4 @@ elif menu_option == "Dashboard":
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
-    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
-    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
-    st.dataframe(df.head(20))
+    st.markdown
