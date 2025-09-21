@@ -23,31 +23,15 @@ def load_data():
 df = load_data()
 
 # ======================
-# Sidebar
+# Sidebar (dihilangkan, langsung default Topology)
 # ======================
-st.sidebar.header("⚙️ Menu")
-menu_option = st.sidebar.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
-search_node = st.sidebar.text_input("🔍 Cari New Site ID / Destination:")
+menu_option = st.radio("Pilih Tampilan:", ["Topology", "Dashboard"], horizontal=True)
+search_node = st.text_input("🔍 Cari New Site ID / Destination:")
 
 # Lock tinggi kanvas
 canvas_height = 350
 
-# ======================
-# Header Freeze
-# ======================
-header_title = "🧬 Topology Fiber Optic Active" if menu_option == "Topology" else "📶 Dashboard Fiber Optic Active"
-st.markdown(
-    f"""
-    <div style="position:sticky; top:0; z-index:1000; background-color:#0e1117; padding:10px; border-bottom:2px solid #444;">
-        <h2 style="margin:0; color:white;">{header_title}</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# ======================
-# Helper kolom
-# ======================
+# helper: ambil kolom jika ada, fallback ke nama alternatif
 def get_col(df, name, alt=None):
     if name in df.columns:
         return name
@@ -69,8 +53,19 @@ col_dest_name = get_col(df, "Destination Name")
 # Main Area
 # ======================
 if menu_option == "Topology":
+    # Judul sticky
+    st.markdown(
+        """
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px; 
+                   z-index:999; border-bottom:1px solid #ddd;">
+            🌐 Topology Fiber Optic Active
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+
     if not search_node:
-        st.info("ℹ️ Masukkan **Site ID / Destination** di sidebar untuk menampilkan topology.")
+        st.info("ℹ️ Masukkan **Site ID / Destination** untuk menampilkan topology.")
     else:
         mask = (
             df[col_site].astype(str).str.contains(search_node, case=False, na=False) |
@@ -222,9 +217,9 @@ if menu_option == "Topology":
                 components.html(html_str, height=canvas_height, scrolling=True)
 
                 # ======================
-                # Tabel di bawah kanvas
+                # Tabel di bawah kanvas (tidak sticky)
                 # ======================
-                st.markdown("### 📋 Data Ring")
+                st.markdown("## 📋 Data Ring")
                 table_cols = [c for c in [
                     col_syskey, col_flp, col_site, col_site_name,
                     col_dest, col_dest_name, col_fiber, col_host
@@ -237,6 +232,17 @@ if menu_option == "Topology":
                 )
 
 elif menu_option == "Dashboard":
+    # Judul sticky
+    st.markdown(
+        """
+        <h2 style="position:sticky; top:0; background-color:white; padding:8px; 
+                   z-index:999; border-bottom:1px solid #ddd;">
+            📊 Dashboard Fiber Optic Active
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
     st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
