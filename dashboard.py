@@ -60,15 +60,7 @@ def get_col(df, name, alt=None):
 # Main Area
 # ======================
 if menu_option == "Topology":
-    st.markdown(
-        """
-        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
-                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🧬 Topology Fiber Optic Active
-        </h2>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown("<h2 style='color:white;'>🧬 Topology Fiber Optic Active</h2>", unsafe_allow_html=True)
 
     if not st.session_state.do_search or search_node.strip() == "":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
@@ -222,14 +214,7 @@ if menu_option == "Topology":
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
-    st.markdown(
-        """
-        <h2 style="position:sticky; top:0; background-color:white; padding:8px;
-                   z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            📊 Dashboard Fiber Optic Active
-        </h2>
-        """,
-        unsafe_allow_html=True
+    st.markdown("<h2 style='color:white;'>📶 Dashboard Fiber Optic Active</h2>", unsafe_allow_html=True)
     )
     # Load Excel untuk dashboard
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
