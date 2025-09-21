@@ -251,7 +251,7 @@ if menu_option == "Topology":
                     col_dest_name, col_fiber, col_ring, col_host
                 ]
                 table_cols = [c for c in table_cols if c in ring_df.columns]
-                st.markdown("### 📋 Data Ring")
+                st.markdown("### 📋 Member Ring")
                 st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
