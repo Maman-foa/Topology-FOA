@@ -24,6 +24,8 @@ if 'do_search' not in st.session_state:
     st.session_state.do_search = False
 if 'search_keyword' not in st.session_state:
     st.session_state.search_keyword = ""
+if 'search_by' not in st.session_state:
+    st.session_state.search_by = "New Site ID"
 
 def trigger_search():
     st.session_state.do_search = True
@@ -35,7 +37,11 @@ col1, col2, col3 = st.columns([1,2,2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology", "Map"])
 with col2:
-    search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
+    search_by = st.selectbox(
+        "Cari berdasarkan:",
+        ["New Site ID", "Ring ID", "Host Name"],
+        key="search_by"
+    )
 with col3:
     search_node = st.text_input(
         "🔍 Masukkan keyword:",
@@ -57,7 +63,7 @@ def get_col(df, name, alt=None):
     return None
 
 # ======================
-# Main Area
+# Topology
 # ======================
 if menu_option == "Topology":
     st.markdown(
@@ -94,7 +100,7 @@ if menu_option == "Topology":
         col_syskey = get_col(df, "System Key")
         col_dest_name = get_col(df, "Destination Name")
         col_ring = get_col(df, "Ring ID")
-        col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
+        col_member_ring = get_col(df, "Member Ring")
 
         # ======================
         # Filter data sesuai keyword
@@ -111,14 +117,10 @@ if menu_option == "Topology":
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
-                # Subheader Ring ID
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
 
-                # ======================
-                # Tampilkan 1 Member Ring di bawah subheader (atau blank jika kosong)
-                # ======================
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
                     members_str = str(non_na_members.iloc[0]) if not non_na_members.empty else ""
@@ -127,9 +129,6 @@ if menu_option == "Topology":
                         unsafe_allow_html=True
                     )
 
-                # ======================
-                # Bersihkan kolom Site/Destination
-                # ======================
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
@@ -151,9 +150,6 @@ if menu_option == "Topology":
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # ======================
-                # Node zig-zag
-                # ======================
                 max_per_row = 8
                 x_spacing = 200
                 y_spacing = 200
@@ -247,67 +243,52 @@ if menu_option == "Topology":
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                # ======================
-                # Tabel Excel Member Ring di bawah canvas
-                # ======================
+                # Tabel Member Ring di bawah canvas
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
                 st.dataframe(display_df, use_container_width=True, height=300)
 
 # ======================
-# Map
+# Map Indonesia per Province
 # ======================
 elif menu_option == "Map":
     st.markdown(
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
                    z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🗺️ Map Fiber Optic Active
+            🗺️ Map SOW Indonesia
         </h2>
         """,
         unsafe_allow_html=True
     )
-    # Load Excel untuk Map
+
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
 
-    lat_col = get_col(df, "Latitude")
-    lon_col = get_col(df, "Longitude")
+    col_prov = get_col(df, "Province")
+    col_sow = get_col(df, "SOW")
 
-    if lat_col is None or lon_col is None:
-        st.warning("⚠️ Data belum memiliki kolom Latitude & Longitude untuk Map.")
+    if col_prov and col_sow:
+        df_map = df.groupby(col_prov)[col_sow].sum().reset_index()
+        df_map[col_prov] = df_map[col_prov].str.strip()
+
+        import plotly.express as px
+        fig = px.choropleth(
+            df_map,
+            geojson="https://raw.githubusercontent.com/rozza/indonesia-geojson/master/indonesia-province.geojson",
+            locations=col_prov,
+            featureidkey="properties.name",
+            color=col_sow,
+            color_continuous_scale="Oranges",
+            labels={col_sow:"Jumlah SOW"},
+            title="Jumlah SOW per Province"
+        )
+        fig.update_geos(fitbounds="locations", visible=False)
+        fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
+
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        import folium
-        from streamlit_folium import st_folium
-
-        center_lat = df[lat_col].mean()
-        center_lon = df[lon_col].mean()
-
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=5)
-
-        for _, row in df.iterrows():
-            site = row.get("New Site ID", "")
-            site_name = row.get("Site Name", "")
-            host = row.get("Host Name", "")
-            flp = row.get("FLP Vendor", "")
-            ring = row.get("Ring ID", "")
-            lat = row.get(lat_col)
-            lon = row.get(lon_col)
-            if pd.notna(lat) and pd.notna(lon):
-                popup_text = f"""
-                <b>Site ID:</b> {site}<br>
-                <b>Site Name:</b> {site_name}<br>
-                <b>Host Name:</b> {host}<br>
-                <b>FLP Vendor:</b> {flp}<br>
-                <b>Ring ID:</b> {ring}
-                """
-                folium.Marker(
-                    location=[lat, lon],
-                    popup=folium.Popup(popup_text, max_width=300),
-                    icon=folium.Icon(color="blue", icon="info-sign")
-                ).add_to(m)
-
-        st_folium(m, width=1200, height=600)
+        st.warning("⚠️ Kolom Province atau SOW tidak ditemukan di Excel.")
