@@ -115,7 +115,7 @@ if menu_option == "Topology":
                 ring_df = df[df["Ring ID"] == ring].copy()
 
                 # ======================
-                # Member Ring (warna abu-abu, font 14px)
+                # Tampilkan 1 Member Ring di bawah subheader
                 # ======================
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
@@ -150,6 +150,7 @@ if menu_option == "Topology":
                 max_per_row = 8
                 x_spacing = 200
                 y_spacing = 200
+
                 # ======================
                 # Zig-zag positions
                 # ======================
@@ -244,15 +245,17 @@ if menu_option == "Topology":
                 components.html(html_str, height=canvas_height, scrolling=False)
 
                 # ======================
-                # Tambahkan tabel Excel di bawah canvas masing-masing Ring
+                # Tampilkan tabel Excel di bawah masing-masing Ring
                 # ======================
                 table_cols = [
                     col_syskey, col_flp, col_site, col_site_name, col_dest,
                     col_dest_name, col_fiber, col_ring, col_host
                 ]
                 table_cols = [c for c in table_cols if c in ring_df.columns]
-                st.markdown("### 📋 Member Ring")
-                st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
+
+                ring_df_display = ring_df[table_cols].fillna("")  # <- NaN jadi kosong
+                st.markdown("### 📋 Data Ring")
+                st.dataframe(ring_df_display.reset_index(drop=True), use_container_width=True, height=300)
 
 elif menu_option == "Dashboard":
     st.markdown(
