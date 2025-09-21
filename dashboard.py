@@ -29,11 +29,8 @@ st.sidebar.header("⚙️ Menu")
 menu_option = st.sidebar.radio("Pilih Tampilan:", ["Topology", "Dashboard"])
 search_node = st.sidebar.text_input("🔍 Cari New Site ID / Destination:")
 
-# Tambahkan slider untuk tinggi kanvas
-canvas_height = st.sidebar.slider(
-    "Tinggi Kanvas Topology (px)", 
-    min_value=300, max_value=900, value=450, step=50
-)
+# Lock tinggi kanvas
+canvas_height = 350
 
 # helper: ambil kolom jika ada, fallback ke nama alternatif
 def get_col(df, name, alt=None):
@@ -82,7 +79,7 @@ if menu_option == "Topology":
                 ring_df = ring_df[ring_df[col_dest].notna() & (ring_df[col_dest].str.strip() != "")]
 
                 # ======================
-                # Topology dengan tinggi dinamis
+                # Topology dengan tinggi fix 350px
                 # ======================
                 nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
                 nodes_order = [
