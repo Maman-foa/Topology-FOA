@@ -58,8 +58,7 @@ with col3:
         key="search_keyword",
         placeholder="Ketik lalu tekan Enter"
     )
-    # tombol trigger pencarian
-    search_trigger = st.button("Cari")
+# tombol cari dihapus, jadi filter hanya jalan saat Enter ditekan
 
 # ======================
 # Helper kolom
@@ -112,9 +111,9 @@ if menu_option == "Topology":
     )
 
     # ======================
-    # Hanya jalankan filter jika tombol "Cari" ditekan
+    # Jalankan filter hanya jika ada keyword di input (Enter)
     # ======================
-    if search_trigger and search_node.strip() != "":
+    if search_node.strip() != "":
         df_filtered = filter_data(search_node, search_by)
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
@@ -141,10 +140,8 @@ if menu_option == "Topology":
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
-                    if s:
-                        node_degree[s] = node_degree.get(s, 0) + 1
-                    if t:
-                        node_degree[t] = node_degree.get(t, 0) + 1
+                    if s: node_degree[s] = node_degree.get(s, 0) + 1
+                    if t: node_degree[t] = node_degree.get(t, 0) + 1
 
                 max_per_row = 8
                 x_spacing = 150
