@@ -113,8 +113,9 @@ if menu_option == "Topology":
                 st.subheader(f"🔗 Ring ID: {ring}")
 
                 ring_df = df[df["Ring ID"] == ring].copy()
+
                 # ======================
-                # Tampilkan 1 Member Ring di bawah subheader (atau blank jika kosong)
+                # Member Ring (warna abu-abu, font 14px)
                 # ======================
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
@@ -242,6 +243,17 @@ if menu_option == "Topology":
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
+                # ======================
+                # Tambahkan tabel Excel di bawah canvas masing-masing Ring
+                # ======================
+                table_cols = [
+                    col_syskey, col_flp, col_site, col_site_name, col_dest,
+                    col_dest_name, col_fiber, col_ring, col_host
+                ]
+                table_cols = [c for c in table_cols if c in ring_df.columns]
+                st.markdown("### 📋 Data Ring")
+                st.dataframe(ring_df[table_cols].reset_index(drop=True), use_container_width=True, height=300)
+
 elif menu_option == "Dashboard":
     st.markdown(
         """
@@ -257,4 +269,7 @@ elif menu_option == "Dashboard":
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
-    st.markdown
+    st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
+    st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
+    st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
+    st.dataframe(df.head(20))
