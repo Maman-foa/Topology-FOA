@@ -57,7 +57,7 @@ else:  # FLP Vendor
             on_change=trigger_search
         )
 
-canvas_height = 800
+canvas_height = 900
 
 # ======================
 # Helper function
@@ -94,7 +94,7 @@ else:
     )
 
 # ======================
-# Konten (gabungan semua ring)
+# Konten (gabungan semua ring, node dikelompokkan per ring)
 # ======================
 if not st.session_state.do_search or search_node.strip() == "":
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan data.")
@@ -136,14 +136,27 @@ else:
         for _, r in df_filtered.iterrows():
             s = str(r[col_site]).strip() if pd.notna(r[col_site]) else ""
             t = str(r[col_dest]).strip() if pd.notna(r[col_dest]) else ""
+            ring = str(r[col_ring]) if pd.notna(r[col_ring]) else "Unknown"
             vendor = str(r[col_flp]) if col_flp in r and pd.notna(r[col_flp]) else ""
             host = str(r[col_host]) if col_host in r and pd.notna(r[col_host]) else ""
 
             if s and s not in added_nodes:
-                net.add_node(s, label=f"{s}\n{host}\n({vendor})", size=25, color="#3182bd")
+                net.add_node(
+                    s,
+                    label=f"{s}\n{host}\n({vendor})",
+                    size=25,
+                    group=ring,   # group berdasarkan Ring ID
+                    title=f"Ring: {ring}"
+                )
                 added_nodes.add(s)
             if t and t not in added_nodes:
-                net.add_node(t, label=f"{t}\n({vendor})", size=25, color="#31a354")
+                net.add_node(
+                    t,
+                    label=f"{t}\n({vendor})",
+                    size=25,
+                    group=ring,
+                    title=f"Ring: {ring}"
+                )
                 added_nodes.add(t)
 
             if s and t:
