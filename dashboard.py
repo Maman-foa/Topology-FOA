@@ -32,7 +32,22 @@ search_node = st.sidebar.text_input("🔍 Cari New Site ID / Destination:")
 # Lock tinggi kanvas
 canvas_height = 350
 
-# helper: ambil kolom jika ada, fallback ke nama alternatif
+# ======================
+# Header Freeze
+# ======================
+header_title = "🧬 Topology Fiber Optic Active" if menu_option == "Topology" else "📶 Dashboard Fiber Optic Active"
+st.markdown(
+    f"""
+    <div style="position:sticky; top:0; z-index:1000; background-color:#0e1117; padding:10px; border-bottom:2px solid #444;">
+        <h2 style="margin:0; color:white;">{header_title}</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ======================
+# Helper kolom
+# ======================
 def get_col(df, name, alt=None):
     if name in df.columns:
         return name
@@ -54,8 +69,6 @@ col_dest_name = get_col(df, "Destination Name")
 # Main Area
 # ======================
 if menu_option == "Topology":
-    st.markdown("<h2 style='color:white;'>🧬 Topology Fiber Optic Active</h2>", unsafe_allow_html=True)
-
     if not search_node:
         st.info("ℹ️ Masukkan **Site ID / Destination** di sidebar untuk menampilkan topology.")
     else:
@@ -224,7 +237,6 @@ if menu_option == "Topology":
                 )
 
 elif menu_option == "Dashboard":
-    st.markdown("<h2 style='color:white;'>📶 Dashboard Fiber Optic Active</h2>", unsafe_allow_html=True)
     st.markdown(f"**Jumlah Ring:** {df['Ring ID'].nunique()}")
     st.markdown(f"**Jumlah Site:** {df['New Site ID'].nunique()}")
     st.markdown(f"**Jumlah Destination:** {df['New Destenation'].nunique()}")
