@@ -77,7 +77,7 @@ if menu_option == "Topology":
         """
         <h2 style="position:sticky; top:0; background-color:white; padding:8px;
                    z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🌐 Topology Fiber Optic Active
+            🧬 Topology Fiber Optic Active
         </h2>
         """,
         unsafe_allow_html=True
