@@ -292,3 +292,19 @@ else:
             st.markdown("### 📋 Member Ring")
             display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
             st.dataframe(display_df, use_container_width=True, height=300)
+
+# ======================
+# Sembunyikan tombol 'Manage App' (ikon mahkota merah)
+# ======================
+hide_streamlit_style = """
+    <style>
+    /* Hilangkan toolbar & tombol share */
+    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+    /* Hilangkan status widget (ikon mahkota merah) */
+    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
+    /* Hilangkan hamburger menu */
+    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
