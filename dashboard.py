@@ -306,10 +306,18 @@ hide_streamlit_style = """
     [data-testid="stDecoration"] {visibility: hidden !important; height: 0 !important;}
     [data-testid="viewerBadge"] {visibility: hidden !important; height: 0 !important;}
     [data-testid="stStatusWidget"] {visibility: hidden !important; height: 0 !important;}
-
-    /* Hilangkan iframe badge Streamlit (ikon mahkota merah) */
-    iframe[title="Streamlit"] {display: none !important;}
-    iframe[title="streamlit"] {display: none !important;}
     </style>
+
+    <script>
+    // Hapus iframe badge Streamlit (ikon mahkota merah)
+    function removeBadge() {
+        let badge = document.querySelector('iframe[title="Streamlit"], iframe[title="streamlit"]');
+        if (badge) { badge.remove(); }
+    }
+    // jalankan saat load
+    window.addEventListener('load', removeBadge);
+    // jalankan tiap 2 detik kalau muncul lagi
+    setInterval(removeBadge, 2000);
+    </script>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
