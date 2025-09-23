@@ -98,16 +98,20 @@ def get_col(df, name, alt=None):
 # ======================
 # Main Area (Topology only)
 # ======================
+# Spacer biar gak ketimpa
+st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
+
+# Judul sticky
 st.markdown(
     """
     <h2 style="
         position:sticky; 
-        top:50px;   /* geser kebawah supaya tidak tabrakan */
+        top:0;  
         background-color:white; 
         padding:12px;
         z-index:999; 
         border-bottom:1px solid #ddd; 
-        margin:20px 0 10px 0;   /* kasih margin atas & bawah */
+        margin:0;
     ">
         🧬 Topology Fiber Optic Active
     </h2>
