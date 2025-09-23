@@ -18,21 +18,6 @@ st.markdown(
 )
 
 # ======================
-# Sembunyikan toolbar Streamlit Cloud
-# ======================
-hide_streamlit_style = """
-    <style>
-    /* Hilangkan tombol 'Share', 'GitHub', '⋮' */
-    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-    /* Hilangkan 'Manage app' di pojok kanan bawah */
-    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-    /* Hilangkan hamburger menu kiri atas */
-    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
-# ======================
 # Session state
 # ======================
 if "authenticated" not in st.session_state:
@@ -46,10 +31,10 @@ if "search_keyword" not in st.session_state:
 # Password Login
 # ======================
 def login():
-    st.title("🔐 Login Topology Fiber Optic Active")
+    st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
     if st.button("Login"):
-        if password == "Alenadarman":   # Ganti dengan password Anda
+        if password == "admin123":   # Ganti dengan password Anda
             st.session_state.authenticated = True
             st.success("Login berhasil!")
             st.rerun()
