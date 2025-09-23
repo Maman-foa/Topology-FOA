@@ -51,7 +51,7 @@ def login():
     st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
     if st.button("Login"):
-        if password == "admin123":   # Ganti dengan password Anda
+        if password == "Jakarta@24":   # Ganti dengan password Anda
             st.session_state.authenticated = True
             st.success("Login berhasil!")
             st.rerun()
