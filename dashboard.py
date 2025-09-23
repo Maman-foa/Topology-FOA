@@ -292,40 +292,24 @@ else:
             st.markdown("### 📋 Member Ring")
             display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
             st.dataframe(display_df, use_container_width=True, height=300)
-hide_streamlit_style = """
-    <style>
-    /* Hilangkan toolbar atas (Share, GitHub, dll) */
-    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-
-    /* Hilangkan footer (ikon mahkota merah, Manage app, Streamlit badge) */
-    footer {visibility: hidden; height: 0;}
-    [data-testid="stDecoration"] {visibility: hidden; height: 0;}
-    [data-testid="viewerBadge"] {visibility: hidden; height: 0;}
-    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-
-    /* Hilangkan hamburger menu */
-    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 hide_streamlit_style = """
     <style>
-    /* Hilangkan toolbar atas (Share, GitHub, ⋮) */
+    /* Hilangkan toolbar atas */
     header [data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
 
-    /* Hilangkan footer (badge, manage app, ikon mahkota) */
+    /* Hilangkan sidebar hamburger */
+    [data-testid="stSidebarNav"] {visibility: hidden !important; height: 0 !important;}
+
+    /* Hilangkan footer */
     footer {visibility: hidden !important; height: 0 !important;}
     [data-testid="stDecoration"] {visibility: hidden !important; height: 0 !important;}
     [data-testid="viewerBadge"] {visibility: hidden !important; height: 0 !important;}
     [data-testid="stStatusWidget"] {visibility: hidden !important; height: 0 !important;}
 
-    /* Sapu jagat: sembunyikan tombol apapun yang fixed di kanan bawah */
-    div[style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
+    /* Hilangkan iframe badge Streamlit (ikon mahkota merah) */
+    iframe[title="Streamlit"] {display: none !important;}
+    iframe[title="streamlit"] {display: none !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
