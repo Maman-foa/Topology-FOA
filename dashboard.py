@@ -10,28 +10,29 @@ st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
-    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
+    /* Atur padding utama konten */
+    .block-container { 
+        padding-top: 1rem; 
+        padding-bottom: 0rem; 
+    }
+    .canvas-border { 
+        border: 3px solid #333333; 
+        border-radius: 5px; 
+    }
+
+    /* Tambah jarak atas sidebar */
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 60px;  /* sesuaikan jarak */
+    }
+
+    /* Hilangkan toolbar Streamlit Cloud */
+    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
+    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
     </style>
     """,
     unsafe_allow_html=True
 )
-
-# ======================
-# Sembunyikan toolbar Streamlit Cloud
-# ======================
-hide_streamlit_style = """
-    <style>
-    /* Hilangkan tombol 'Share', 'GitHub', '⋮' */
-    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-    /* Hilangkan 'Manage app' di pojok kanan bawah */
-    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-    /* Hilangkan hamburger menu kiri atas */
-    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 
 # ======================
 # Session state
@@ -119,20 +120,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ======================
+# Konten utama (sama seperti skrip lama)
+# ======================
 if not st.session_state.do_search or search_node.strip() == "":
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
 else:
-    # ======================
     # Load Excel hanya saat Enter ditekan
-    # ======================
     file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
     sheet_name = 'Query'
     df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
     df.columns = df.columns.str.strip()
 
-    # ======================
     # Kolom helper
-    # ======================
     col_site = get_col(df, "New Site ID")
     col_dest = get_col(df, "New Destenation", alt="New Destination")
     col_fiber = get_col(df, "Fiber Type")
@@ -145,9 +145,7 @@ else:
     col_ring = get_col(df, "Ring ID")
     col_member_ring = get_col(df, "Member Ring")  # <- Tambahan
 
-    # ======================
     # Filter data sesuai keyword
-    # ======================
     if search_by == "New Site ID":
         df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
     elif search_by == "Ring ID":
@@ -165,9 +163,7 @@ else:
 
             ring_df = df[df["Ring ID"] == ring].copy()
 
-            # ======================
             # Tampilkan 1 Member Ring di bawah subheader (atau blank jika kosong)
-            # ======================
             if col_member_ring and not ring_df.empty:
                 non_na_members = ring_df[col_member_ring].dropna()
                 members_str = str(non_na_members.iloc[0]) if not non_na_members.empty else ""
@@ -176,9 +172,7 @@ else:
                     unsafe_allow_html=True
                 )
 
-            # ======================
             # Bersihkan kolom Site/Destination
-            # ======================
             ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
             ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
@@ -200,9 +194,7 @@ else:
                 if t:
                     node_degree[t] = node_degree.get(t, 0) + 1
 
-            # ======================
             # Node zig-zag
-            # ======================
             max_per_row = 8
             x_spacing = 200
             y_spacing = 200
@@ -296,9 +288,7 @@ else:
             )
             components.html(html_str, height=canvas_height, scrolling=False)
 
-            # ======================
             # Tabel Excel Member Ring di bawah canvas
-            # ======================
             table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
             st.markdown("### 📋 Member Ring")
             display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
