@@ -20,11 +20,34 @@ st.markdown(
 # ======================
 # Session state
 # ======================
-if 'do_search' not in st.session_state:
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "do_search" not in st.session_state:
     st.session_state.do_search = False
-if 'search_keyword' not in st.session_state:
+if "search_keyword" not in st.session_state:
     st.session_state.search_keyword = ""
 
+# ======================
+# Password Login
+# ======================
+def login():
+    st.title("🔐 Login")
+    password = st.text_input("Masukkan Password:", type="password")
+    if st.button("Login"):
+        if password == "Alenadarman@86":   # Ganti dengan password Anda
+            st.session_state.authenticated = True
+            st.success("Login berhasil!")
+            st.rerun()
+        else:
+            st.error("Password salah.")
+
+if not st.session_state.authenticated:
+    login()
+    st.stop()  # hentikan eksekusi sampai login berhasil
+
+# ======================
+# Fungsi pencarian
+# ======================
 def trigger_search():
     st.session_state.do_search = True
 
