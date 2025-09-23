@@ -22,8 +22,6 @@ st.markdown(
 # ======================
 hide_streamlit_style = """
     <style>
-    /* Hilangkan tombol 'Share', 'GitHub', '⋮' */
-    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
     /* Hilangkan 'Manage app' di pojok kanan bawah */
     [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
     /* Hilangkan hamburger menu kiri atas */
@@ -292,32 +290,3 @@ else:
             st.markdown("### 📋 Member Ring")
             display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
             st.dataframe(display_df, use_container_width=True, height=300)
-
-hide_streamlit_style = """
-    <style>
-    /* Hilangkan toolbar atas */
-    header [data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
-
-    /* Hilangkan sidebar hamburger */
-    [data-testid="stSidebarNav"] {visibility: hidden !important; height: 0 !important;}
-
-    /* Hilangkan footer */
-    footer {visibility: hidden !important; height: 0 !important;}
-    [data-testid="stDecoration"] {visibility: hidden !important; height: 0 !important;}
-    [data-testid="viewerBadge"] {visibility: hidden !important; height: 0 !important;}
-    [data-testid="stStatusWidget"] {visibility: hidden !important; height: 0 !important;}
-    </style>
-
-    <script>
-    // Hapus iframe badge Streamlit (ikon mahkota merah)
-    function removeBadge() {
-        let badge = document.querySelector('iframe[title="Streamlit"], iframe[title="streamlit"]');
-        if (badge) { badge.remove(); }
-    }
-    // jalankan saat load
-    window.addEventListener('load', removeBadge);
-    // jalankan tiap 2 detik kalau muncul lagi
-    setInterval(removeBadge, 2000);
-    </script>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
