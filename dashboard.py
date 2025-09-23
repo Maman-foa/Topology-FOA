@@ -100,8 +100,15 @@ def get_col(df, name, alt=None):
 # ======================
 st.markdown(
     """
-    <h2 style="position:sticky; top:0; background-color:white; padding:8px;
-               z-index:999; border-bottom:1px solid #ddd; margin:0;">
+    <h2 style="
+        position:sticky; 
+        top:50px;   /* geser kebawah supaya tidak tabrakan */
+        background-color:white; 
+        padding:12px;
+        z-index:999; 
+        border-bottom:1px solid #ddd; 
+        margin:20px 0 10px 0;   /* kasih margin atas & bawah */
+    ">
         🧬 Topology Fiber Optic Active
     </h2>
     """,
