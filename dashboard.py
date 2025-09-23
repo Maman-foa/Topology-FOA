@@ -22,6 +22,8 @@ st.markdown(
 # ======================
 hide_streamlit_style = """
     <style>
+    /* Hilangkan tombol 'Share', 'GitHub', '⋮' */
+    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
     /* Hilangkan 'Manage app' di pojok kanan bawah */
     [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
     /* Hilangkan hamburger menu kiri atas */
@@ -29,7 +31,6 @@ hide_streamlit_style = """
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 
 # ======================
 # Session state
