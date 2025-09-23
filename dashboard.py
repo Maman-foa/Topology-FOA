@@ -4,11 +4,6 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 
 # ======================
-# Ubah password di sini
-# ======================
-PASSWORD = "admin123"   # <-- ganti sesuai kebutuhan
-
-# ======================
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide")
@@ -16,28 +11,6 @@ st.markdown(
     """
     <style>
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
-
-    /* login box center */
-    .login-box {
-        max-width:420px;
-        margin: 60px auto;
-        padding: 22px;
-        border-radius: 10px;
-        background: linear-gradient(180deg, #ffffff, #f3f6fb);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-        border: 1px solid #e6e9ef;
-        text-align:center;
-    }
-    .login-title { font-size:20px; margin-bottom:8px; }
-    .login-sub { color: #666; font-size:13px; margin-bottom:14px; }
-    .login-note { font-size:12px; color:#999; margin-top:10px; }
-
-    /* smaller devices */
-    @media (max-width:600px) {
-        .login-box { margin: 40px 16px; }
-    }
-
-    /* canvas border from original script */
     .canvas-border { border: 3px solid #333333; border-radius: 5px; }
     </style>
     """,
@@ -55,59 +28,22 @@ if "search_keyword" not in st.session_state:
     st.session_state.search_keyword = ""
 
 # ======================
-# Sidebar logout (tampil saat sudah login)
+# Password Login
 # ======================
-if st.session_state.authenticated:
-    if st.sidebar.button("🔓 Logout"):
-        st.session_state.authenticated = False
-        st.experimental_rerun()
-
-# ======================
-# Login screen (blokir semua konten sampai benar)
-# ======================
-if not st.session_state.authenticated:
-    st.markdown(
-        """
-        <div class="login-box">
-            <div class="login-title">🔐 Masuk untuk melihat Topology</div>
-            <div class="login-sub">Masukkan password untuk mengakses halaman ini</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # tampilkan field input dan tombol (terpusat secara visual)
-    pw_col1, pw_col2, pw_col3 = st.columns([1, 2, 1])
-    with pw_col2:
-        password = st.text_input("", type="password", placeholder="Ketik password di sini", key="pw_input")
-        login_clicked = st.button("Masuk")
-
-    if login_clicked:
-        if password == PASSWORD:
+def login():
+    st.title("🔐 Login")
+    password = st.text_input("Masukkan Password:", type="password")
+    if st.button("Login"):
+        if password == "Alenadarman":   # Ganti dengan password Anda
             st.session_state.authenticated = True
-            st.success("✅ Login berhasil — mengarahkan Anda...")
-            st.experimental_rerun()
+            st.success("Login berhasil!")
+            st.rerun()
         else:
-            st.error("❌ Password salah. Coba lagi.")
+            st.error("Password salah.")
 
-    # hentikan eksekusi sehingga konten utama tidak ditampilkan sampai login
-    st.stop()
-
-# ======================
-# Jika sampai sini: sudah authenticated
-# ======================
-
-# ======================
-# Page config & CSS (konten utama)
-# ======================
-st.markdown(
-    """
-    <style>
-    /* Anda bisa tetap menaruh style lain di sini jika perlu */
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+if not st.session_state.authenticated:
+    login()
+    st.stop()  # hentikan eksekusi sampai login berhasil
 
 # ======================
 # Fungsi pencarian
