@@ -309,4 +309,23 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+hide_streamlit_style = """
+    <style>
+    /* Hilangkan toolbar atas (Share, GitHub, ⋮) */
+    header [data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
+
+    /* Hilangkan footer (badge, manage app, ikon mahkota) */
+    footer {visibility: hidden !important; height: 0 !important;}
+    [data-testid="stDecoration"] {visibility: hidden !important; height: 0 !important;}
+    [data-testid="viewerBadge"] {visibility: hidden !important; height: 0 !important;}
+    [data-testid="stStatusWidget"] {visibility: hidden !important; height: 0 !important;}
+
+    /* Sapu jagat: sembunyikan tombol apapun yang fixed di kanan bawah */
+    div[style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
