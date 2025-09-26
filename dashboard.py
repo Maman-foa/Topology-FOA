@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
+import re
 
 # ======================
 # Page config & CSS
@@ -22,7 +23,7 @@ st.markdown(
 
     /* Tambah jarak atas sidebar */
     [data-testid="stSidebar"] > div:first-child {
-        padding-top: 60px;  /* sesuaikan jarak */
+        padding-top: 60px;
     }
 
     /* Hilangkan toolbar Streamlit Cloud */
@@ -33,6 +34,16 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# ======================
+# Fungsi Highlight
+# ======================
+def highlight_text(text, keyword):
+    """Highlight keyword dalam text dengan HTML mark."""
+    if not keyword:
+        return text
+    pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+    return pattern.sub(lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", str(text))
 
 # ======================
 # Session state
@@ -54,13 +65,13 @@ def login():
         if password == "Jakarta@24":   # Ganti dengan password Anda
             st.session_state.authenticated = True
             st.success("Login berhasil!")
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Password salah.")
 
 if not st.session_state.authenticated:
     login()
-    st.stop()  # hentikan eksekusi sampai login berhasil
+    st.stop()
 
 # ======================
 # Fungsi pencarian
@@ -99,7 +110,6 @@ def get_col(df, name, alt=None):
 # ======================
 # Main Area (Topology only)
 # ======================
-# Spacer biar gak ketimpa
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
 
 # Judul sticky
@@ -126,17 +136,12 @@ st.markdown(
 if not st.session_state.do_search or search_node.strip() == "":
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
 else:
-    # ======================
-    # Spinner untuk loading
-    # ======================
     with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
-        # Load Excel hanya saat Enter ditekan
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
         sheet_name = 'Query'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
         df.columns = df.columns.str.strip()
 
-        # Kolom helper
         col_site = get_col(df, "New Site ID")
         col_dest = get_col(df, "New Destenation", alt="New Destination")
         col_fiber = get_col(df, "Fiber Type")
@@ -149,12 +154,11 @@ else:
         col_ring = get_col(df, "Ring ID")
         col_member_ring = get_col(df, "Member Ring")
 
-        # Filter data sesuai keyword
         if search_by == "New Site ID":
             df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
         elif search_by == "Ring ID":
             df_filtered = df[df[col_ring].astype(str).str.contains(search_node, case=False, na=False)]
-        else:  # Host Name
+        else:
             df_filtered = df[df[col_host].astype(str).str.contains(search_node, case=False, na=False)]
 
         if df_filtered.empty:
@@ -162,20 +166,18 @@ else:
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
-                st.subheader(f"🔗 Ring ID: {ring}")
+                st.markdown(f"### 🔗 Ring ID: {highlight_text(ring, search_node)}", unsafe_allow_html=True)
 
                 ring_df = df[df["Ring ID"] == ring].copy()
 
-                # Tampilkan 1 Member Ring di bawah subheader
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
                     members_str = str(non_na_members.iloc[0]) if not non_na_members.empty else ""
                     st.markdown(
-                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {members_str}</p>',
+                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {highlight_text(members_str, search_node)}</p>',
                         unsafe_allow_html=True
                     )
 
-                # Bersihkan kolom Site/Destination
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
@@ -197,7 +199,6 @@ else:
                     if t:
                         node_degree[t] = node_degree.get(t, 0) + 1
 
-                # Node zig-zag
                 max_per_row = 8
                 x_spacing = 200
                 y_spacing = 200
@@ -240,13 +241,16 @@ else:
                         "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
                     )
 
-                    label_parts = [fiber, nid]
+                    label_parts = [
+                        highlight_text(fiber, search_node),
+                        highlight_text(nid, search_node)
+                    ]
                     if info["Site Name"]:
-                        label_parts.append(info["Site Name"])
+                        label_parts.append(highlight_text(info["Site Name"], search_node))
                     if info["Host Name"]:
-                        label_parts.append(info["Host Name"])
+                        label_parts.append(highlight_text(info["Host Name"], search_node))
                     if info["FLP Vendor"]:
-                        label_parts.append(info["FLP Vendor"])
+                        label_parts.append(highlight_text(info["FLP Vendor"], search_node))
                     title = "<br>".join([p for p in label_parts if p])
 
                     x, y = positions.get(nid, (0,0))
@@ -269,10 +273,10 @@ else:
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                         flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
-                            net.add_node(s, label=s)
+                            net.add_node(s, label=highlight_text(s, search_node))
                             added_nodes.add(s)
                         if t not in added_nodes:
-                            net.add_node(t, label=t)
+                            net.add_node(t, label=highlight_text(t, search_node))
                             added_nodes.add(t)
                         net.add_edge(
                             s,
@@ -291,8 +295,10 @@ else:
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                # Tabel Excel Member Ring di bawah canvas
+                # Tabel Excel Member Ring
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
-                display_df = ring_df[table_cols].fillna("").reset_index(drop=True)
-                st.dataframe(display_df, use_container_width=True, height=300)
+                display_df = ring_df[table_cols].fillna("").reset_index(drop=True).astype(str)
+                for col in display_df.columns:
+                    display_df[col] = display_df[col].apply(lambda x: highlight_text(x, search_node))
+                st.markdown(display_df.to_html(escape=False), unsafe_allow_html=True)
