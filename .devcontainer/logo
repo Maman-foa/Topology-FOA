@@ -1,4 +1,1 @@
-cd path/ke/repository
-git rm .devcontainer/logo
-git commit -m "hapus logo"
-git push
+
