@@ -11,7 +11,6 @@ st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
-    /* Atur padding utama konten */
     .block-container { 
         padding-top: 1rem; 
         padding-bottom: 0rem; 
@@ -20,13 +19,9 @@ st.markdown(
         border: 3px solid #333333; 
         border-radius: 5px; 
     }
-
-    /* Tambah jarak atas sidebar */
     [data-testid="stSidebar"] > div:first-child {
         padding-top: 60px;
     }
-
-    /* Hilangkan toolbar Streamlit Cloud */
     header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
     [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
     [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
@@ -36,10 +31,9 @@ st.markdown(
 )
 
 # ======================
-# Fungsi Highlight untuk tabel
+# Fungsi Highlight (untuk tabel & teks luar)
 # ======================
 def highlight_text(text, keyword):
-    """Highlight keyword dalam text dengan HTML mark."""
     if not keyword:
         return text
     pattern = re.compile(re.escape(keyword), re.IGNORECASE)
@@ -62,7 +56,7 @@ def login():
     st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
     if st.button("Login"):
-        if password == "Jakarta@24":   # Ganti dengan password Anda
+        if password == "Jakarta@24":
             st.session_state.authenticated = True
             st.success("Login berhasil!")
             st.experimental_rerun()
@@ -112,7 +106,6 @@ def get_col(df, name, alt=None):
 # ======================
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
 
-# Judul sticky
 st.markdown(
     """
     <h2 style="
@@ -187,7 +180,8 @@ else:
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", font_color="black", directed=False)
+                # ⬇️ font_color global DIHAPUS supaya warna per-node bisa dipakai
+                net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", directed=False)
                 net.toggle_physics(False)
 
                 node_degree = {}
@@ -229,9 +223,6 @@ else:
                         "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                     }
 
-                # ======================
-                # Tambah Node
-                # ======================
                 for nid in nodes_order:
                     info = get_node_info(nid)
                     fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
@@ -253,15 +244,12 @@ else:
                         label_parts.append(info["FLP Vendor"])
                     title = "<br>".join([p for p in label_parts if p])
 
-                    # cek apakah node match keyword → merah
-                    is_match = (
-                        search_node.lower() in nid.lower()
-                        or (info["Site Name"] and search_node.lower() in info["Site Name"].lower())
-                        or (info["Host Name"] and search_node.lower() in info["Host Name"].lower())
-                        or (info["FLP Vendor"] and search_node.lower() in info["FLP Vendor"].lower())
-                    )
-
                     x, y = positions.get(nid, (0,0))
+                    # ⬇️ Warna font merah kalau match keyword
+                    is_match = re.search(re.escape(search_node), nid, re.IGNORECASE) or \
+                               re.search(re.escape(search_node), title, re.IGNORECASE)
+                    font_color = "red" if is_match else "black"
+
                     net.add_node(
                         nid,
                         label="\n".join(label_parts),
@@ -272,23 +260,20 @@ else:
                         image=node_image,
                         color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
                         title=title,
-                        font={"color": "red"} if is_match else {"color": "black"}
+                        font={"color": font_color}
                     )
                     added_nodes.add(nid)
 
-                # ======================
-                # Tambah Edge
-                # ======================
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                         flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
-                            net.add_node(s, label=s)
+                            net.add_node(s, label=s, font={"color": "red" if re.search(re.escape(search_node), s, re.IGNORECASE) else "black"})
                             added_nodes.add(s)
                         if t not in added_nodes:
-                            net.add_node(t, label=t)
+                            net.add_node(t, label=t, font={"color": "red" if re.search(re.escape(search_node), t, re.IGNORECASE) else "black"})
                             added_nodes.add(t)
                         net.add_edge(
                             s,
@@ -307,7 +292,9 @@ else:
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
+                # ======================
                 # Tabel Excel Member Ring
+                # ======================
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True).astype(str)
