@@ -42,7 +42,7 @@ def login():
         if password == "Jakarta@24":
             st.session_state.authenticated = True
             st.success("Login berhasil!")
-            st.rerun()
+            st.experimental_rerun()   # gunakan experimental_rerun
         else:
             st.error("Password salah.")
 
@@ -129,7 +129,8 @@ else:
         else:
             ring_ids = df_filtered[col_ring].dropna().unique()
             for ring in ring_ids:
-                st.subheader(f"🔗 Ring ID: <mark>{ring}</mark>", unsafe_allow_html=True)
+                # GANTI: gunakan st.markdown agar HTML <mark> boleh dipakai
+                st.markdown(f"### 🔗 Ring ID: <mark>{ring}</mark>", unsafe_allow_html=True)
 
                 ring_df = df[df[col_ring] == ring].copy()
                 if col_member_ring and not ring_df.empty:
@@ -170,10 +171,15 @@ else:
                         "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
                     )
 
-                    # Highlight merah kalau match
-                    is_match = search_node.lower() in nid.lower() or (
-                        col_host in row0 and str(row0[col_host]).lower().find(search_node.lower())!=-1
-                    )
+                    # Highlight merah kalau match (search_node mungkin kosong, guard)
+                    is_match = False
+                    if isinstance(search_node, str) and search_node.strip():
+                        try:
+                            host_val = str(row0.get(col_host,"")).lower() if row0 else ""
+                        except Exception:
+                            host_val = ""
+                        is_match = (search_node.lower() in nid.lower()) or (search_node.lower() in host_val)
+
                     border_color = "red" if is_match else (
                         "007FFF" if fiber=="dark fiber" else "21793A" if fiber in ["p0","p0_1"] else "A2A2C2"
                     )
