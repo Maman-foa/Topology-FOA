@@ -272,7 +272,7 @@ else:
                         image=node_image,
                         color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
                         title=title,
-                        font={"color": "Yelow"} if is_match else {"color": "black"}
+                        font={"color": "red"} if is_match else {"color": "black"}
                     )
                     added_nodes.add(nid)
 
