@@ -36,7 +36,7 @@ st.markdown(
 )
 
 # ======================
-# Fungsi Highlight
+# Fungsi Highlight untuk tabel
 # ======================
 def highlight_text(text, keyword):
     """Highlight keyword dalam text dengan HTML mark."""
@@ -229,6 +229,9 @@ else:
                         "FLP Vendor": str(row0[col_flp]) if col_flp in row0 and pd.notna(row0[col_flp]) else ""
                     }
 
+                # ======================
+                # Tambah Node
+                # ======================
                 for nid in nodes_order:
                     info = get_node_info(nid)
                     fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
@@ -241,17 +244,22 @@ else:
                         "https://img.icons8.com/ios-filled/50/A2A2C2/router.png"
                     )
 
-                    label_parts = [
-                        highlight_text(fiber, search_node),
-                        highlight_text(nid, search_node)
-                    ]
+                    label_parts = [fiber, nid]
                     if info["Site Name"]:
-                        label_parts.append(highlight_text(info["Site Name"], search_node))
+                        label_parts.append(info["Site Name"])
                     if info["Host Name"]:
-                        label_parts.append(highlight_text(info["Host Name"], search_node))
+                        label_parts.append(info["Host Name"])
                     if info["FLP Vendor"]:
-                        label_parts.append(highlight_text(info["FLP Vendor"], search_node))
+                        label_parts.append(info["FLP Vendor"])
                     title = "<br>".join([p for p in label_parts if p])
+
+                    # cek apakah node match keyword → merah
+                    is_match = (
+                        search_node.lower() in nid.lower()
+                        or (info["Site Name"] and search_node.lower() in info["Site Name"].lower())
+                        or (info["Host Name"] and search_node.lower() in info["Host Name"].lower())
+                        or (info["FLP Vendor"] and search_node.lower() in info["FLP Vendor"].lower())
+                    )
 
                     x, y = positions.get(nid, (0,0))
                     net.add_node(
@@ -263,20 +271,24 @@ else:
                         shape="image",
                         image=node_image,
                         color={"border": "007FFF" if f_low=="dark fiber" else ("21793A" if f_low in ["p0","p0_1"] else "A2A2C2"), "background": "white"},
-                        title=title
+                        title=title,
+                        font={"color": "red"} if is_match else {"color": "black"}
                     )
                     added_nodes.add(nid)
 
+                # ======================
+                # Tambah Edge
+                # ======================
                 for _, r in ring_df.iterrows():
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                         flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
-                            net.add_node(s, label=highlight_text(s, search_node))
+                            net.add_node(s, label=s)
                             added_nodes.add(s)
                         if t not in added_nodes:
-                            net.add_node(t, label=highlight_text(t, search_node))
+                            net.add_node(t, label=t)
                             added_nodes.add(t)
                         net.add_edge(
                             s,
