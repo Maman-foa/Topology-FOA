@@ -33,7 +33,7 @@ st.markdown(
 # ======================
 # Header dengan Logo
 # ======================
-logo_url = "https://raw.githubusercontent.com/username/nama-repo/main/HWI.png"  # Ganti sesuai URL logo kamu
+logo_url = "HWI.png"  # Ganti sesuai URL logo kamu
 st.markdown(
     f"""
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
