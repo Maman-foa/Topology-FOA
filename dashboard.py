@@ -58,11 +58,11 @@ def login():
     if st.button("Login"):
         if password == "Jakarta@24":
             st.session_state.authenticated = True
-            st.success("Login berhasil!")
-            st.experimental_rerun()
+            st.success("Login berhasil! 🎉")
         else:
             st.error("Password salah.")
 
+# Jika belum login, stop di sini
 if not st.session_state.authenticated:
     login()
     st.stop()
@@ -180,7 +180,6 @@ else:
                 valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                 nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
-                # ⬇️ font_color global DIHAPUS supaya warna per-node bisa dipakai
                 net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", directed=False)
                 net.toggle_physics(False)
 
@@ -245,7 +244,6 @@ else:
                     title = "<br>".join([p for p in label_parts if p])
 
                     x, y = positions.get(nid, (0,0))
-                    # ⬇️ Warna font merah kalau match keyword
                     is_match = re.search(re.escape(search_node), nid, re.IGNORECASE) or \
                                re.search(re.escape(search_node), title, re.IGNORECASE)
                     font_color = "red" if is_match else "black"
