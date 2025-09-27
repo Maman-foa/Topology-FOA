@@ -31,6 +31,20 @@ st.markdown(
 )
 
 # ======================
+# Header dengan Logo
+# ======================
+logo_url = "https://raw.githubusercontent.com/username/nama-repo/main/HWI.png"  # Ganti sesuai URL logo kamu
+st.markdown(
+    f"""
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
+        <img src="{logo_url}" alt="Logo" style="height:50px;">
+        <h2 style="margin:0;">🧬 Topology Fiber Optic Active</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ======================
 # Fungsi Highlight (untuk tabel & teks luar)
 # ======================
 def highlight_text(text, keywords):
@@ -68,7 +82,6 @@ def login():
         else:
             st.error("Password salah.")
 
-# Jika belum login, stop di sini
 if not st.session_state.authenticated:
     login()
     st.stop()
@@ -94,7 +107,6 @@ with col3:
         placeholder="Contoh: 16SBY0267, 16SBY0497",
         on_change=trigger_search
     )
-    # pecah input berdasarkan koma
     search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
 canvas_height = 350
@@ -114,26 +126,6 @@ def get_col(df, name, alt=None):
 # ======================
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
 
-st.markdown(
-    """
-    <h2 style="
-        position:sticky; 
-        top:0;  
-        background-color:white; 
-        padding:12px;
-        z-index:999; 
-        border-bottom:1px solid #ddd; 
-        margin:0;
-    ">
-        🧬 Topology Fiber Optic Active
-    </h2>
-    """,
-    unsafe_allow_html=True
-)
-
-# ======================
-# Konten utama
-# ======================
 if not st.session_state.do_search or not search_nodes:
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
@@ -155,7 +147,6 @@ else:
         col_ring = get_col(df, "Ring ID")
         col_member_ring = get_col(df, "Member Ring")
 
-        # filtering multiple keyword pakai OR (join dengan |)
         pattern = "|".join(map(re.escape, search_nodes))
         if search_by == "New Site ID":
             df_filtered = df[df[col_site].astype(str).str.contains(pattern, case=False, na=False)]
@@ -303,9 +294,6 @@ else:
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                # ======================
-                # Tabel Excel Member Ring
-                # ======================
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True).astype(str)
