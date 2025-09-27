@@ -26,7 +26,7 @@ st.markdown(
         justify-content:center;
         gap:12px;
     ">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Huawei_Standard_logo.svg" 
+        <img src="https://www.google.com/imgres?q=logo%20huawei%20terbaru&imgurl=https%3A%2F%2Fimages.seeklogo.com%2Flogo-png%2F6%2F1%2Fhuawei-logo-png_seeklogo-68529.png&imgrefurl=https%3A%2F%2Fseeklogo.com%2Fvector-logo%2F68529%2Fhuawei&docid=kHndFtsfvSsqWM&tbnid=alXFxK5NdQp11M&vet=12ahUKEwif-8bHxPmPAxXLxjgGHZpREz8QM3oECBgQAA..i&w=600&h=600&hcb=2&ved=2ahUKEwif-8bHxPmPAxXLxjgGHZpREz8QM3oECBgQAA" 
              alt="Huawei Logo" height="40">
         <h2 style="margin:0;">🧬 Topology Fiber Optic Active</h2>
     </div>
