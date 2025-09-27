@@ -8,6 +8,7 @@ import re
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide")
+
 st.markdown(
     """
     <style>
@@ -25,19 +26,11 @@ st.markdown(
     header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
     [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
     [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
-# ======================
-# Header dengan Logo (Sticky)
-# ======================
-logo_url = "HWI.png"  # Ganti sesuai path/logo kamu
-st.markdown(
-    f"""
-    <style>
-    .header-sticky {{
+    /* ======================
+       Header sticky custom
+       ====================== */
+    .header-sticky {
         position: fixed;
         top: 0;
         left: 0;
@@ -46,17 +39,27 @@ st.markdown(
         z-index: 9999;
         padding: 10px;
         box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-    }}
-    .header-content {{
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:10px;
-    }}
-    .header-space {{
-        height: 80px; /* ruang agar tidak tertutup header */
-    }}
+    }
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .header-space {
+        height: 80px;
+    }
     </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ======================
+# Header dengan Logo
+# ======================
+logo_url = "HWI.png"  # Pastikan logo ada di folder yang sama
+st.markdown(
+    f"""
     <div class="header-sticky">
         <div class="header-content">
             <img src="{logo_url}" alt="Logo" style="height:50px;">
@@ -146,10 +149,8 @@ def get_col(df, name, alt=None):
     return None
 
 # ======================
-# Main Area (Topology only)
+# Main Area
 # ======================
-st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-
 if not st.session_state.do_search or not search_nodes:
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
