@@ -31,21 +31,45 @@ st.markdown(
 )
 
 # ======================
-# Header dengan Logo
+# Header dengan Logo (Sticky)
 # ======================
-logo_url = "HWI.png"  # Ganti sesuai URL logo kamu
+logo_url = "HWI.png"  # Ganti sesuai path/logo kamu
 st.markdown(
     f"""
-    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
-        <img src="{logo_url}" alt="Logo" style="height:50px;">
-        <h2 style="margin:0;">🧬 Topology Fiber Optic Active</h2>
+    <style>
+    .header-sticky {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: white;
+        z-index: 9999;
+        padding: 10px;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    }}
+    .header-content {{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+    }}
+    .header-space {{
+        height: 80px; /* ruang agar tidak tertutup header */
+    }}
+    </style>
+    <div class="header-sticky">
+        <div class="header-content">
+            <img src="{logo_url}" alt="Logo" style="height:50px;">
+            <h2 style="margin:0;">🧬 Topology Fiber Optic Active</h2>
+        </div>
     </div>
+    <div class="header-space"></div>
     """,
     unsafe_allow_html=True
 )
 
 # ======================
-# Fungsi Highlight (untuk tabel & teks luar)
+# Fungsi Highlight
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
