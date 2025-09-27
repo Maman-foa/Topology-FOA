@@ -27,7 +27,7 @@ st.markdown(
 # ======================
 # Load File Excel FIX
 # ======================
-df = pd.read_excel("src/Fiber Optic Active.xlsx")
+df = pd.read_excel("FOA NEW ALL FLP AUGUST_2025.xlsb")
 
 col_site = "New Site ID"
 col_dest = "New Destenation"
