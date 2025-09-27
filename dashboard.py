@@ -33,11 +33,17 @@ st.markdown(
 # ======================
 # Fungsi Highlight (untuk tabel & teks luar)
 # ======================
-def highlight_text(text, keyword):
-    if not keyword:
+def highlight_text(text, keywords):
+    if not keywords:
         return text
-    pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-    return pattern.sub(lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", str(text))
+    result = str(text)
+    for kw in keywords:
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
+        result = pattern.sub(
+            lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", 
+            result
+        )
+    return result
 
 # ======================
 # Session state
@@ -82,12 +88,14 @@ with col1:
 with col2:
     search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
 with col3:
-    search_node = st.text_input(
-        "🔍 Masukkan keyword:",
+    search_input = st.text_input(
+        "🔍 Masukkan keyword (pisahkan dengan koma):",
         key="search_keyword",
-        placeholder="Ketik lalu tekan Enter",
+        placeholder="Contoh: 16SBY0267, 16SBY0497",
         on_change=trigger_search
     )
+    # pecah input berdasarkan koma
+    search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
 canvas_height = 350
 
@@ -126,8 +134,8 @@ st.markdown(
 # ======================
 # Konten utama
 # ======================
-if not st.session_state.do_search or search_node.strip() == "":
-    st.info("ℹ️ Pilih kategori di atas, masukkan keyword, lalu tekan Enter untuk menampilkan topology.")
+if not st.session_state.do_search or not search_nodes:
+    st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
     with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
         file_path = 'FOA NEW ALL FLP AUGUST_2025.xlsb'
@@ -147,19 +155,21 @@ else:
         col_ring = get_col(df, "Ring ID")
         col_member_ring = get_col(df, "Member Ring")
 
+        # filtering multiple keyword pakai OR (join dengan |)
+        pattern = "|".join(map(re.escape, search_nodes))
         if search_by == "New Site ID":
-            df_filtered = df[df[col_site].astype(str).str.contains(search_node, case=False, na=False)]
+            df_filtered = df[df[col_site].astype(str).str.contains(pattern, case=False, na=False)]
         elif search_by == "Ring ID":
-            df_filtered = df[df[col_ring].astype(str).str.contains(search_node, case=False, na=False)]
+            df_filtered = df[df[col_ring].astype(str).str.contains(pattern, case=False, na=False)]
         else:
-            df_filtered = df[df[col_host].astype(str).str.contains(search_node, case=False, na=False)]
+            df_filtered = df[df[col_host].astype(str).str.contains(pattern, case=False, na=False)]
 
         if df_filtered.empty:
             st.warning("⚠️ Node tidak ditemukan di data.")
         else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
-                st.markdown(f"### 🔗 Ring ID: {highlight_text(ring, search_node)}", unsafe_allow_html=True)
+                st.markdown(f"### 🔗 Ring ID: {highlight_text(ring, search_nodes)}", unsafe_allow_html=True)
 
                 ring_df = df[df["Ring ID"] == ring].copy()
 
@@ -167,7 +177,7 @@ else:
                     non_na_members = ring_df[col_member_ring].dropna()
                     members_str = str(non_na_members.iloc[0]) if not non_na_members.empty else ""
                     st.markdown(
-                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {highlight_text(members_str, search_node)}</p>',
+                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {highlight_text(members_str, search_nodes)}</p>',
                         unsafe_allow_html=True
                     )
 
@@ -244,8 +254,11 @@ else:
                     title = "<br>".join([p for p in label_parts if p])
 
                     x, y = positions.get(nid, (0,0))
-                    is_match = re.search(re.escape(search_node), nid, re.IGNORECASE) or \
-                               re.search(re.escape(search_node), title, re.IGNORECASE)
+                    is_match = any(
+                        re.search(re.escape(kw), nid, re.IGNORECASE) or 
+                        re.search(re.escape(kw), title, re.IGNORECASE) 
+                        for kw in search_nodes
+                    )
                     font_color = "red" if is_match else "black"
 
                     net.add_node(
@@ -268,10 +281,10 @@ else:
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                         flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
-                            net.add_node(s, label=s, font={"color": "red" if re.search(re.escape(search_node), s, re.IGNORECASE) else "black"})
+                            net.add_node(s, label=s, font={"color": "red" if any(re.search(re.escape(kw), s, re.IGNORECASE) for kw in search_nodes) else "black"})
                             added_nodes.add(s)
                         if t not in added_nodes:
-                            net.add_node(t, label=t, font={"color": "red" if re.search(re.escape(search_node), t, re.IGNORECASE) else "black"})
+                            net.add_node(t, label=t, font={"color": "red" if any(re.search(re.escape(kw), t, re.IGNORECASE) for kw in search_nodes) else "black"})
                             added_nodes.add(t)
                         net.add_edge(
                             s,
@@ -297,5 +310,5 @@ else:
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True).astype(str)
                 for col in display_df.columns:
-                    display_df[col] = display_df[col].apply(lambda x: highlight_text(x, search_node))
+                    display_df[col] = display_df[col].apply(lambda x: highlight_text(x, search_nodes))
                 st.markdown(display_df.to_html(escape=False), unsafe_allow_html=True)
