@@ -138,7 +138,7 @@ if not st.session_state.do_search or not search_nodes:
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
     with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
-        file_path = 'SEPTEMBER_FOA - Update_2025'
+        file_path = 'SEPTEMBER_FOA - Update_2025.xlsb'
         sheet_name = 'Query CW39_2025'
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
         df.columns = df.columns.str.strip()
