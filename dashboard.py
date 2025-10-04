@@ -56,20 +56,18 @@ def save_approved_devices(data):
 # ======================
 import requests
 
-import platform
+import socket
 import uuid
-import requests
 
 def get_device_info():
     try:
-        ip = requests.get('https://api.ipify.org').text.strip()
-    except:
         ip = socket.gethostbyname(socket.gethostname())
+    except:
+        ip = "Unknown"
     hostname = socket.gethostname()
-    device_id = str(uuid.getnode())  # alamat MAC unik per device
-    os_name = platform.system()
-    return ip, f"{hostname}_{os_name}_{device_id}"
-
+    mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
+                         for ele in range(0,8*6,8)][::-1])
+    return mac_addr, hostname
 
 
 # ======================
