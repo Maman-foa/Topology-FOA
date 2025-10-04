@@ -158,7 +158,7 @@ st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 0.5rem;  /* ubah sesuai kebutuhan */
+        padding-top: -10rem;  /* ubah sesuai kebutuhan */
     }
     .stImage {
         margin-top: -10px;  /* mengangkat logo sedikit */
