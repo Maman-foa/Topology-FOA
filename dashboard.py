@@ -6,21 +6,43 @@ import socket
 import re
 import json
 import os
-import uuid
 
 # ======================
 # Konfigurasi halaman
 # ======================
 st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide", page_icon="🧬")
 
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 0rem;
+}
+.canvas-border {
+    border: 3px solid #333333;
+    border-radius: 5px;
+}
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 60px;
+}
+header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+[data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
+[data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
+</style>
+""", unsafe_allow_html=True)
+
 # ======================
 # File penyimpanan approval device
 # ======================
 APPROVAL_FILE = "approved_devices.json"
+
 if not os.path.exists(APPROVAL_FILE):
     with open(APPROVAL_FILE, "w") as f:
         json.dump([], f)
 
+# ======================
+# Fungsi utilitas approval
+# ======================
 def load_approved_devices():
     with open(APPROVAL_FILE, "r") as f:
         return json.load(f)
@@ -30,19 +52,25 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Fungsi dapatkan MAC address
+# Dapatkan info device/mac
 # ======================
+import requests
+
+import socket
+import uuid
+
 def get_device_info():
     hostname = socket.gethostname()
     mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                          for ele in range(0,8*6,8)][::-1])
-    return mac_addr, hostname
+    return mac_addr, hostname  # mac_addr jadi id unik device
 
 # ======================
-# Mode app
+# Mode app (admin / user)
 # ======================
 query_params = st.query_params
-mode = query_params.get("mode", ["user"])[0].lower().strip()
+mode = query_params.get("mode", "user")
+mode = mode.lower().strmac()
 
 if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
@@ -54,33 +82,63 @@ if mode not in ["admin", "user"]:
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
 
+    # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah ❌")
         st.stop()
 
+    st.success("Login Admin berhasil ✅")
+
+    # Load daftar device dari file JSON
     devices = load_approved_devices()
 
-    st.subheader("📥 Pending Approval")
-    for dev in [d for d in devices if not d.get("approved", False)]:
-        st.write(f"MAC: {dev['mac']} - Hostname: {dev['hostname']}")
-        if st.button(f"✅ Approve {dev['mac']}"):
-            dev["approved"] = True
-            save_approved_devices(devices)
-            st.experimental_rerun()
+    # Bagi menjadi pending & approved
+    pending_devices = [d for d in devices if not d.get("approved", False)]
+    approved_devices = [d for d in devices if d.get("approved", False)]
 
-    st.subheader("📋 Approved Devices")
-    for dev in [d for d in devices if d.get("approved", False)]:
-        st.write(f"✅ {dev['mac']} - {dev['hostname']}")
-        if st.button(f"❌ Reject {dev['mac']}"):
-            dev["approved"] = False
-            save_approved_devices(devices)
-            st.experimental_rerun()
+    st.subheader("📥 Pending Approval")
+    if pending_devices:
+        for dev in pending_devices:
+            col1, col2, col3 = st.columns([2, 2, 1])
+            with col1:
+                st.write(f"**mac:** {dev['mac']}")
+            with col2:
+                st.write(f"**Hostname:** {dev['hostname']}")
+            with col3:
+                if st.button("✅ Approve", key=f"approve_{dev['mac']}"):
+                    dev["approved"] = True
+                    save_approved_devices(devices)
+                    st.success(f"Device {dev['mac']} disetujui ✅")
+                    st.rerun()
+                if st.button("❌ Reject", key=f"reject_{dev['mac']}"):
+                    devices.remove(dev)
+                    save_approved_devices(devices)
+                    st.warning(f"Device {dev['mac']} ditolak ❌")
+                    st.rerun()
+    else:
+        st.info("Tidak ada device pending approval.")
+
+    st.subheader("📋 Device Approved")
+    if approved_devices:
+        for dev in approved_devices:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"✅ {dev['mac']} – {dev['hostname']}")
+            with col2:
+                if st.button("❌ Reject", key=f"unapprove_{dev['mac']}"):
+                    dev["approved"] = False
+                    save_approved_devices(devices)
+                    st.warning(f"Device {dev['mac']} diubah menjadi pending ❌")
+                    st.rerun()
+    else:
+        st.info("Belum ada device yang diapprove.")
+
     st.stop()
 
-# ======================
-# Mode User
-# ======================
+# ==========================================================
+# ====================== MODE USER ==========================
+# ==========================================================
 mac, hostname = get_device_info()
 devices = load_approved_devices()
 found = next((d for d in devices if d["mac"] == mac), None)
@@ -90,11 +148,22 @@ if not found:
     save_approved_devices(devices)
     found = {"mac": mac, "hostname": hostname, "approved": False}
 
+st.title("🧬 National Topology")
+
 if not found.get("approved"):
-    st.warning("⚠️ Device/MAC Anda belum diapprove.\nSilakan hubungi admin.")
-    st.info(f"MAC: {mac}\nHostname: {hostname}")
+    st.warning("⚠️ Device/mac Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
+    st.markdown("""
+        <p style="text-align:center;">
+            📲 <a href="https://wa.me/628977742777" target="_blank" 
+            style="text-decoration:none; color:green; font-weight:bold;">Hubungi Admin via WhatsApp</a>
+        </p>
+    """, unsafe_allow_html=True)
+    st.info(f"**mac:** {mac}\n\n**Hostname:** {hostname}")
     st.stop()
 
+# ======================
+# Setelah approved
+# ======================
 st.success("✅ Akses diberikan. Menampilkan Topology...")
 
 # ======================
