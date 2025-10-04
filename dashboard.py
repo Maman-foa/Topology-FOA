@@ -3,107 +3,69 @@ import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
 import re
-import os
-import socket
-
-# ======================
-# CONFIG APPROVAL IP
-# ======================
-APPROVAL_FILE = "ip_approval.csv"
-
-def get_user_ip():
-    try:
-        hostname = socket.gethostname()
-        ip = socket.gethostbyname(hostname)
-        return ip
-    except:
-        return "unknown"
-
-def load_approval_data():
-    if os.path.exists(APPROVAL_FILE):
-        return pd.read_csv(APPROVAL_FILE)
-    return pd.DataFrame(columns=["ip", "approved"])
-
-def save_approval_data(df):
-    df.to_csv(APPROVAL_FILE, index=False)
-
-def is_ip_approved(ip):
-    df = load_approval_data()
-    if not df.empty:
-        approved_row = df[(df["ip"] == ip) & (df["approved"] == True)]
-        return not approved_row.empty
-    return False
-
-def request_approval(ip):
-    df = load_approval_data()
-    if ip not in df["ip"].values:
-        df = pd.concat([df, pd.DataFrame([{"ip": ip, "approved": False}])], ignore_index=True)
-        save_approval_data(df)
-
-def admin_page():
-    st.title("🔧 Admin Dashboard - Approval Device/IP")
-    df = load_approval_data()
-    if df.empty:
-        st.info("Tidak ada request approval.")
-        return
-    st.table(df)
-    for idx, row in df.iterrows():
-        if not row["approved"]:
-            if st.button(f"Approve IP {row['ip']}", key=f"approve_{idx}"):
-                df.loc[idx, "approved"] = True
-                save_approval_data(df)
-                st.success(f"IP {row['ip']} telah diapprove.")
-
-# ======================
-# CEK APPROVAL IP SEBELUM LOGIN
-# ======================
-user_ip = get_user_ip()
-
-if user_ip == "unknown":
-    st.error("Tidak dapat mendeteksi IP Anda.")
-    st.stop()
-
-if not is_ip_approved(user_ip):
-    request_approval(user_ip)
-    st.warning(f"Device/IP Anda ({user_ip}) belum diapprove. Silakan hubungi admin via WhatsApp.")
-    st.markdown(
-        f"""
-        <p style="text-align:center; margin-top:10px;">
-            📲 Hubungi admin untuk approval:<br>
-            <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
-                Klik untuk WhatsApp Admin
-            </a>
-        </p>
-        """,
-        unsafe_allow_html=True
-    )
-    st.stop()
 
 # ======================
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
 st.markdown("""
-<style>
-.block-container { 
-    padding-top: 1rem; 
-    padding-bottom: 0rem; 
-}
-.canvas-border { 
-    border: 3px solid #333333; 
-    border-radius: 5px; 
-}
-[data-testid="stSidebar"] > div:first-child {
-    padding-top: 60px;
-}
-header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-[data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-[data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-</style>
-""", unsafe_allow_html=True)
+    <style>
+    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 60px; }
+    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
+    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
+    </style>
+    """, unsafe_allow_html=True)
 
 # ======================
-# Fungsi Highlight
+# Mode dari URL
+# ======================
+query_params = st.experimental_get_query_params()
+mode = query_params.get("mode", ["user"])[0]  # default = "user"
+
+# ======================
+# Admin Mode
+# ======================
+if mode == "admin":
+    st.title("🔑 Admin Dashboard")
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    password = st.text_input("Masukkan password admin:", type="password")
+    if st.button("Login"):
+        if password == "Jakarta@24":
+            st.session_state.authenticated = True
+            st.success("Admin login berhasil!")
+        else:
+            st.error("Password salah.")
+
+    if not st.session_state.authenticated:
+        st.stop()
+
+    st.subheader("📌 Approval Device/IP")
+
+    # Simulasi request approval
+    if "requests" not in st.session_state:
+        st.session_state.requests = pd.DataFrame({
+            "Device/IP": ["192.168.1.10", "192.168.1.11"],
+            "Status": ["Pending", "Pending"]
+        })
+
+    for i, row in st.session_state.requests.iterrows():
+        col1, col2 = st.columns([3, 1])
+        col1.write(row["Device/IP"])
+        if col2.button(f"Approve {row['Device/IP']}", key=i):
+            st.session_state.requests.loc[i, "Status"] = "Approved"
+            st.success(f"{row['Device/IP']} telah diapprove ✅")
+
+    st.table(st.session_state.requests)
+    st.stop()
+
+# ======================
+# User Mode
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
@@ -117,9 +79,6 @@ def highlight_text(text, keywords):
         )
     return result
 
-# ======================
-# Session state
-# ======================
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "do_search" not in st.session_state:
@@ -127,24 +86,19 @@ if "do_search" not in st.session_state:
 if "search_keyword" not in st.session_state:
     st.session_state.search_keyword = ""
 
-# ======================
-# Password Login
-# ======================
-def login():
-    st.title("🔐 Login Admin")
-    password = st.text_input("Masukkan Password:", type="password")
+st.title("🔍 User Topology Viewer")
 
-    st.markdown(
-        """
+def login():
+    st.title("🔐 Login")
+    password = st.text_input("Masukkan Password:", type="password")
+    st.markdown("""
         <p style="text-align:center; margin-top:10px;">
             Jika lupa password, hubungi admin di:<br>
             <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
                 📲 Hubungi via WhatsApp
             </a>
         </p>
-        """,
-        unsafe_allow_html=True
-    )
+        """, unsafe_allow_html=True)
 
     if st.button("Login"):
         if password == "Jakarta@24":
@@ -153,30 +107,13 @@ def login():
         else:
             st.error("Password salah.")
 
-# ======================
-# Menu Admin
-# ======================
-menu = ["Topology", "Admin Approve IP"]
-
-choice = st.sidebar.selectbox("Menu", menu)
-
-if choice == "Admin Approve IP":
-    if not st.session_state.authenticated:
-        login()
-    else:
-        admin_page()
-    st.stop()
-
-# ======================
-# Login jika belum
-# ======================
 if not st.session_state.authenticated:
     login()
     st.stop()
 
-# ======================
-# Menu + Search
-# ======================
+def trigger_search():
+    st.session_state.do_search = True
+
 col1, col2, col3 = st.columns([1,2,2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology"])
@@ -187,15 +124,12 @@ with col3:
         "🔍 Masukkan keyword (pisahkan dengan koma):",
         key="search_keyword",
         placeholder="Contoh: 16SBY0267, 16SBY0497",
-        on_change=lambda: st.session_state.update({"do_search": True})
+        on_change=trigger_search
     )
     search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
 canvas_height = 350
 
-# ======================
-# Fungsi Helper get_col
-# ======================
 def get_col(df, name, alt=None):
     if name in df.columns:
         return name
@@ -203,30 +137,13 @@ def get_col(df, name, alt=None):
         return alt
     return None
 
-# ======================
-# Konten utama (Topology)
-# ======================
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <h2 style="
-        position:sticky; 
-        top:0;  
-        background-color:white; 
-        padding:12px;
-        z-index:999; 
-        border-bottom:1px solid #ddd; 
-        margin:0;
-    ">
+st.markdown("""
+    <h2 style="position:sticky; top:0; background-color:white; padding:12px; z-index:999; border-bottom:1px solid #ddd; margin:0;">
         🧬 Topology Fiber Optic Active
     </h2>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
 
-# ======================
-# Konten Topology
-# ======================
 if not st.session_state.do_search or not search_nodes:
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
@@ -267,10 +184,7 @@ else:
                 if col_member_ring and not ring_df.empty:
                     non_na_members = ring_df[col_member_ring].dropna()
                     members_str = str(non_na_members.iloc[0]) if not non_na_members.empty else ""
-                    st.markdown(
-                        f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {highlight_text(members_str, search_nodes)}</p>',
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(f'<p style="font-size:14px; color:gray; margin-top:-10px;">💡 Member Ring: {highlight_text(members_str, search_nodes)}</p>', unsafe_allow_html=True)
 
                 ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
                 ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
