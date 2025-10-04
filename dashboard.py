@@ -8,6 +8,7 @@ import re
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
+st.markdown("[📲 Hubungi via WhatsApp](https://wa.me/6281234567890)", unsafe_allow_html=True)
 st.set_page_config(layout="wide")
 st.markdown(
     """
