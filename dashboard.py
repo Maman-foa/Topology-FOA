@@ -155,11 +155,11 @@ import base64
 # ===============================
 # Fungsi untuk memuat gambar lokal ke HTML
 # ===============================
-def local_image_to_html(image_path, height=None):
+def local_image_to_html(image_path, height=None, style=""):
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
     height_attr = f'height="{height}"' if height else ""
-    return f'<img src="data:image/png;base64,{encoded_string}" {height_attr} style="object-fit:contain;">'
+    return f'<img src="data:image/png;base64,{encoded_string}" {height_attr} style="object-fit:contain; {style}">'
 
 # ===============================
 # Set page config
@@ -167,7 +167,7 @@ def local_image_to_html(image_path, height=None):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header rapi
+# CSS untuk header rapi dan logo kedua full kanan
 # ===============================
 st.markdown("""
 <style>
@@ -176,11 +176,22 @@ st.markdown("""
 }
 .header {
     display: flex;
-    align-items: center;  /* sejajarkan logo dan teks */
-    gap: 20px;            /* jarak antar logo */
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+.logo-second {
+    flex-grow: 1; /* membuat logo kedua memenuhi ruang tersisa */
+    display: flex;
+}
+.logo-second img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 100px;
 }
 .header img {
-    max-height: 100px; /* atur tinggi logo */
+    max-height: 100px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -189,12 +200,14 @@ st.markdown("""
 # Membuat header dengan dua logo
 # ===============================
 logo1_html = local_image_to_html("HWI.png", height=100)
-logo2_html = local_image_to_html("Logo All Vendor .png", height=100)  # logo kedua
+logo2_html = local_image_to_html("Logo All Vendor .png", style="width:100%;")
 
 st.markdown(f"""
 <div class="header">
     {logo1_html}
-    {logo2_html}
+    <div class="logo-second">
+        {logo2_html}
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
