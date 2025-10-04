@@ -10,7 +10,7 @@ import os
 # ======================
 # Konfigurasi halaman
 # ======================
-st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide", page_icon='HWI.png')
 
 st.markdown("""
 <style>
