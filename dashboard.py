@@ -155,10 +155,11 @@ import base64
 # ===============================
 # Fungsi untuk memuat gambar lokal ke HTML
 # ===============================
-def local_image_to_html(image_path, width="100%"):
+def local_image_to_html(image_path, height=None):
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
-    return f'<img src="data:image/png;base64,{encoded_string}" style="width:{width}; height:auto; object-fit:contain;">'
+    height_attr = f'height="{height}"' if height else ""
+    return f'<img src="data:image/png;base64,{encoded_string}" {height_attr} style="object-fit:contain;">'
 
 # ===============================
 # Set page config
@@ -166,7 +167,7 @@ def local_image_to_html(image_path, width="100%"):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header penuh lebar
+# CSS untuk header rapi
 # ===============================
 st.markdown("""
 <style>
@@ -174,22 +175,26 @@ st.markdown("""
     padding-top: 1rem;
 }
 .header {
-    width: 100%;
-    text-align: center;
+    display: flex;
+    align-items: center;  /* sejajarkan logo dan teks */
+    gap: 20px;            /* jarak antar logo */
 }
 .header img {
-    max-height: 150px; /* atur tinggi logo */
+    max-height: 100px; /* atur tinggi logo */
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ===============================
-# Membuat header banner logo penuh lebar
+# Membuat header dengan dua logo
 # ===============================
-image_html = local_image_to_html("Logo All Vendor .png")
+logo1_html = local_image_to_html("HWI.png", height=100)
+logo2_html = local_image_to_html("Logo All Vendor .png", height=100)  # logo kedua
+
 st.markdown(f"""
 <div class="header">
-    {image_html}
+    {logo1_html}
+    {logo2_html}
 </div>
 """, unsafe_allow_html=True)
 
