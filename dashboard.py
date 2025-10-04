@@ -8,7 +8,6 @@ import re
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
-st.markdown("[📲 Hubungi via WhatsApp](https://wa.me/6281234567890)", unsafe_allow_html=True)
 st.set_page_config(layout="wide")
 st.markdown(
     """
@@ -60,6 +59,7 @@ if "search_keyword" not in st.session_state:
 # ======================
 # Password Login
 # ======================
+st.markdown("[📲 Hubungi via WhatsApp](https://wa.me/6281234567890)", unsafe_allow_html=True)
 def login():
     st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
