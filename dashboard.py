@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import socket
 import os
+import requests
 from datetime import datetime
 
 # ======================
@@ -18,10 +19,22 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode (admin/user)
+# Dapatkan mode (admin/user) dari query params
 # ======================
-mode = st.query_params.get("mode", ["user"])[0]  # <--- sudah diperbarui
+mode = st.query_params.get("mode", ["user"])[0]
 
+# ======================
+# Fungsi untuk mendapatkan IP publik
+# ======================
+def get_public_ip():
+    try:
+        return requests.get("https://api.ipify.org").text
+    except:
+        return socket.gethostbyname(socket.gethostname())
+
+# ======================
+# Mode Admin
+# ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
     password = st.text_input("Masukkan password admin:", type="password")
@@ -32,7 +45,7 @@ if mode == "admin":
     st.success("Login Admin berhasil ✅")
     approvals = load_approvals()
 
-    st.subheader("Daftar Request Access")
+    st.subheader("📩 Daftar Request Access")
     requests = approvals[approvals["status"] == "pending"]
     if requests.empty:
         st.info("Tidak ada request akses baru.")
@@ -45,28 +58,28 @@ if mode == "admin":
                 save_approvals(approvals)
                 st.experimental_rerun()
 
-    st.subheader("Daftar Semua Device")
+    st.subheader("📜 Daftar Semua Device")
     st.table(approvals)
 
-else:  # mode user
-    ip_user = socket.gethostbyname(socket.gethostname())
+# ======================
+# Mode User
+# ======================
+else:
+    ip_user = get_public_ip()
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
 
     if ip_user not in approved_ips:
         if ip_user not in approvals["ip"].tolist():
-            approvals = pd.concat([
-                approvals,
-                pd.DataFrame([{
-                    "ip": ip_user,
-                    "status": "pending",
-                    "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "approved_time": ""
-                }])
-            ], ignore_index=True)
+            approvals = approvals.append({
+                "ip": ip_user,
+                "status": "pending",
+                "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "approved_time": ""
+            }, ignore_index=True)
             save_approvals(approvals)
 
-        st.warning("Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
+        st.warning("⚠️ Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
         st.markdown(
             '<a href="https://wa.me/628977742777" target="_blank">📲 Hubungi Admin via WhatsApp</a>',
             unsafe_allow_html=True
@@ -75,3 +88,4 @@ else:  # mode user
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     st.write("**Topology aktif untuk user ini**")
+    # ==== Letakkan skrip topology kamu di sini ====
