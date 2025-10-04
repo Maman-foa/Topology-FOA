@@ -200,7 +200,7 @@ st.markdown("""
 # ===============================
 # Membuat dua logo
 # ===============================
-logo1_html = local_image_to_html("HWI.png", style="max-height:150px;")
+logo1_html = local_image_to_html("HWI.png", style="max-height:100px;")
 logo2_html = local_image_to_html("Logo All Vendor .png", style="height:150px; width:100%; object-fit:contain;")
 
 st.markdown(f"""
