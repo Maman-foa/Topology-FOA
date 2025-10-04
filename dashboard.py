@@ -20,7 +20,7 @@ def save_approvals(df):
 # ======================
 # Dapatkan mode (admin/user)
 # ======================
-mode = st.query_params.get("mode", ["user"])[0]
+mode = st.experimental_get_query_params().get("mode", ["user"])[0]
 
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
@@ -48,7 +48,7 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(approvals)
 
-elif mode == "user":
+else:  # mode user
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
@@ -71,7 +71,5 @@ elif mode == "user":
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
+    # === Letakkan skrip Topology kamu di sini ===
     st.write("**Topology aktif untuk user ini**")
-
-else:
-    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
