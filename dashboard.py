@@ -6,6 +6,14 @@ import socket
 import re
 import json
 import os
+import uuid
+
+# ======================
+# Fungsi utilitas tambahan
+# ======================
+def strmac(s):
+    """Normalisasi string: trim, lowercase, hapus spasi ekstra."""
+    return str(s).strip().lower() if s is not None else ""
 
 # ======================
 # Konfigurasi halaman
@@ -41,7 +49,7 @@ if not os.path.exists(APPROVAL_FILE):
         json.dump([], f)
 
 # ======================
-# Fungsi utilitas approval
+# Fungsi load/save approval
 # ======================
 def load_approved_devices():
     with open(APPROVAL_FILE, "r") as f:
@@ -52,25 +60,20 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Dapatkan info device/mac
+# Fungsi mendapatkan device info
 # ======================
-import requests
-
-import socket
-import uuid
-
 def get_device_info():
     hostname = socket.gethostname()
     mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                          for ele in range(0,8*6,8)][::-1])
-    return mac_addr, hostname  # mac_addr jadi id unik device
+    return mac_addr, hostname
 
 # ======================
-# Mode app (admin / user)
+# Mode aplikasi
 # ======================
-query_params = st.query_params
-mode = query_params.get("mode", "user")
-mode = mode.lower().strmac()
+query_params = st.experimental_get_query_params()
+mode = query_params.get("mode", ["user"])[0]
+mode = strmac(mode.lower())
 
 if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
@@ -82,7 +85,6 @@ if mode not in ["admin", "user"]:
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
 
-    # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah ❌")
@@ -90,10 +92,7 @@ if mode == "admin":
 
     st.success("Login Admin berhasil ✅")
 
-    # Load daftar device dari file JSON
     devices = load_approved_devices()
-
-    # Bagi menjadi pending & approved
     pending_devices = [d for d in devices if not d.get("approved", False)]
     approved_devices = [d for d in devices if d.get("approved", False)]
 
@@ -110,12 +109,12 @@ if mode == "admin":
                     dev["approved"] = True
                     save_approved_devices(devices)
                     st.success(f"Device {dev['mac']} disetujui ✅")
-                    st.rerun()
+                    st.experimental_rerun()
                 if st.button("❌ Reject", key=f"reject_{dev['mac']}"):
                     devices.remove(dev)
                     save_approved_devices(devices)
                     st.warning(f"Device {dev['mac']} ditolak ❌")
-                    st.rerun()
+                    st.experimental_rerun()
     else:
         st.info("Tidak ada device pending approval.")
 
@@ -130,15 +129,15 @@ if mode == "admin":
                     dev["approved"] = False
                     save_approved_devices(devices)
                     st.warning(f"Device {dev['mac']} diubah menjadi pending ❌")
-                    st.rerun()
+                    st.experimental_rerun()
     else:
         st.info("Belum ada device yang diapprove.")
 
     st.stop()
 
-# ==========================================================
-# ====================== MODE USER ==========================
-# ==========================================================
+# ======================
+# Mode User
+# ======================
 mac, hostname = get_device_info()
 devices = load_approved_devices()
 found = next((d for d in devices if d["mac"] == mac), None)
@@ -161,13 +160,10 @@ if not found.get("approved"):
     st.info(f"**mac:** {mac}\n\n**Hostname:** {hostname}")
     st.stop()
 
-# ======================
-# Setelah approved
-# ======================
 st.success("✅ Akses diberikan. Menampilkan Topology...")
 
 # ======================
-# Fungsi Highlight
+# Fungsi highlight
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
