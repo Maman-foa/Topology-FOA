@@ -17,6 +17,8 @@ st.markdown(
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
     .canvas-border { border: 3px solid #333333; border-radius: 5px; }
     [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+    /* Hide experimental_get_query_params warning */
+    div[role="alert"] {display: none !important;}
     </style>
     """,
     unsafe_allow_html=True
