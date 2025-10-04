@@ -3,12 +3,95 @@ import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
 import re
+import os
+import socket
+
+# ======================
+# CONFIG
+# ======================
+APPROVAL_FILE = "ip_approval.csv"  # File untuk menyimpan IP approval
+
+# ======================
+# Helper untuk IP & Approval
+# ======================
+def get_user_ip():
+    """Dapatkan IP pengguna."""
+    try:
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        return ip
+    except:
+        return "unknown"
+
+def load_approval_data():
+    if os.path.exists(APPROVAL_FILE):
+        return pd.read_csv(APPROVAL_FILE)
+    return pd.DataFrame(columns=["ip", "approved"])
+
+def save_approval_data(df):
+    df.to_csv(APPROVAL_FILE, index=False)
+
+def is_ip_approved(ip):
+    df = load_approval_data()
+    if not df.empty:
+        approved_row = df[(df["ip"] == ip) & (df["approved"] == True)]
+        return not approved_row.empty
+    return False
+
+def request_approval(ip):
+    df = load_approval_data()
+    if ip not in df["ip"].values:
+        df = pd.concat([df, pd.DataFrame([{"ip": ip, "approved": False}])], ignore_index=True)
+        save_approval_data(df)
+
+# ======================
+# Halaman Admin Approve IP
+# ======================
+def admin_page():
+    st.title("🔧 Admin Dashboard - Approval Device/IP")
+    df = load_approval_data()
+    if df.empty:
+        st.info("Tidak ada request approval.")
+        return
+
+    st.table(df)
+
+    for idx, row in df.iterrows():
+        if not row["approved"]:
+            if st.button(f"Approve IP {row['ip']}", key=f"approve_{idx}"):
+                df.loc[idx, "approved"] = True
+                save_approval_data(df)
+                st.success(f"IP {row['ip']} telah diapprove.")
+
+# ======================
+# Login Device/IP Approval
+# ======================
+user_ip = get_user_ip()
+
+if user_ip == "unknown":
+    st.error("Tidak dapat mendeteksi IP Anda.")
+    st.stop()
+
+if not is_ip_approved(user_ip):
+    st.warning(f"Device/IP Anda ({user_ip}) belum diapprove. Silakan hubungi admin via WhatsApp.")
+    request_approval(user_ip)
+    st.markdown(
+        f"""
+        <p style="text-align:center; margin-top:10px;">
+            Hubungi admin untuk approval:<br>
+            <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
+                📲 Hubungi via WhatsApp
+            </a>
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+    st.stop()
 
 # ======================
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
-st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
@@ -32,7 +115,16 @@ st.markdown(
 )
 
 # ======================
-# Fungsi Highlight (untuk tabel & teks luar)
+# Admin Menu
+# ======================
+menu = ["Topology", "Admin Approve IP"]
+choice = st.sidebar.selectbox("Menu", menu)
+if choice == "Admin Approve IP":
+    admin_page()
+    st.stop()
+
+# ======================
+# Fungsi Highlight
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
@@ -63,7 +155,6 @@ def login():
     st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
 
-    # Tambahkan link WhatsApp di bawah input password
     st.markdown(
         """
         <p style="text-align:center; margin-top:10px;">
@@ -83,17 +174,9 @@ def login():
         else:
             st.error("Password salah.")
 
-
-# Jika belum login, stop di sini
 if not st.session_state.authenticated:
     login()
     st.stop()
-
-# ======================
-# Fungsi pencarian
-# ======================
-def trigger_search():
-    st.session_state.do_search = True
 
 # ======================
 # Menu + Search
@@ -108,9 +191,8 @@ with col3:
         "🔍 Masukkan keyword (pisahkan dengan koma):",
         key="search_keyword",
         placeholder="Contoh: 16SBY0267, 16SBY0497",
-        on_change=trigger_search
+        on_change=lambda: st.session_state.update({"do_search": True})
     )
-    # pecah input berdasarkan koma
     search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
 canvas_height = 350
@@ -129,7 +211,6 @@ def get_col(df, name, alt=None):
 # Main Area (Topology only)
 # ======================
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-
 st.markdown(
     """
     <h2 style="
@@ -147,9 +228,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ======================
-# Konten utama
-# ======================
 if not st.session_state.do_search or not search_nodes:
     st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
 else:
@@ -171,7 +249,6 @@ else:
         col_ring = get_col(df, "Ring ID")
         col_member_ring = get_col(df, "Member Ring")
 
-        # filtering multiple keyword pakai OR (join dengan |)
         pattern = "|".join(map(re.escape, search_nodes))
         if search_by == "New Site ID":
             df_filtered = df[df[col_site].astype(str).str.contains(pattern, case=False, na=False)]
@@ -186,7 +263,6 @@ else:
             ring_ids = df_filtered["Ring ID"].dropna().unique()
             for ring in ring_ids:
                 st.markdown(f"### 🔗 Ring ID: {highlight_text(ring, search_nodes)}", unsafe_allow_html=True)
-
                 ring_df = df[df["Ring ID"] == ring].copy()
 
                 if col_member_ring and not ring_df.empty:
@@ -319,9 +395,6 @@ else:
                 )
                 components.html(html_str, height=canvas_height, scrolling=False)
 
-                # ======================
-                # Tabel Excel Member Ring
-                # ======================
                 table_cols = [col_syskey, col_flp, col_site, col_site_name, col_dest, col_dest_name, col_fiber, col_ring, col_host]
                 st.markdown("### 📋 Member Ring")
                 display_df = ring_df[table_cols].fillna("").reset_index(drop=True).astype(str)
