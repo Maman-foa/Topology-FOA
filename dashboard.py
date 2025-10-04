@@ -56,15 +56,20 @@ def save_approved_devices(data):
 # ======================
 import requests
 
+import platform
+import uuid
+import requests
+
 def get_device_info():
     try:
-        # deteksi IP publik dari jaringan
         ip = requests.get('https://api.ipify.org').text.strip()
     except:
-        # fallback ke IP lokal jika offline
         ip = socket.gethostbyname(socket.gethostname())
     hostname = socket.gethostname()
-    return ip, hostname
+    device_id = str(uuid.getnode())  # alamat MAC unik per device
+    os_name = platform.system()
+    return ip, f"{hostname}_{os_name}_{device_id}"
+
 
 
 # ======================
