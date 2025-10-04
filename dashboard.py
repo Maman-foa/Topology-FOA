@@ -1,111 +1,75 @@
 import streamlit as st
 import pandas as pd
-from pyvis.network import Network
-import streamlit.components.v1 as components
-import re
+import socket
+import os
+from datetime import datetime
 
 # ======================
-# Page config & CSS
+# Simpan file approval
 # ======================
-st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
-st.markdown("""
-<style>
-.block-container { 
-    padding-top: 1rem; 
-    padding-bottom: 0rem; 
-}
-.canvas-border { 
-    border: 3px solid #333333; 
-    border-radius: 5px; 
-}
-[data-testid="stSidebar"] > div:first-child {
-    padding-top: 60px;
-}
-header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-[data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-[data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
-</style>
-""", unsafe_allow_html=True)
+APPROVAL_FILE = "approved_devices.csv"
+if not os.path.exists(APPROVAL_FILE):
+    pd.DataFrame(columns=["ip", "status", "request_time", "approved_time"]).to_csv(APPROVAL_FILE, index=False)
+
+def load_approvals():
+    return pd.read_csv(APPROVAL_FILE)
+
+def save_approvals(df):
+    df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Mode dari URL
+# Dapatkan mode (admin/user)
 # ======================
-mode = st.query_params.get("mode", ["user"])[0]  # default = "user"
+mode = st.experimental_get_query_params().get("mode", ["user"])[0]
 
-# ======================
-# Fungsi Highlight
-# ======================
-def highlight_text(text, keywords):
-    if not keywords:
-        return text
-    result = str(text)
-    for kw in keywords:
-        pattern = re.compile(re.escape(kw), re.IGNORECASE)
-        result = pattern.sub(
-            lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", 
-            result
-        )
-    return result
-
-# ======================
-# Login untuk admin
-# ======================
 if mode == "admin":
-    st.title("🔐 Admin Login")
-    password = st.text_input("Masukkan Password Admin:", type="password")
-    if st.button("Login"):
-        if password == "Admin@123":
-            st.session_state.admin_authenticated = True
-        else:
-            st.error("Password salah.")
-    if not st.session_state.get("admin_authenticated", False):
+    st.title("🔧 Admin Dashboard")
+    password = st.text_input("Masukkan password admin:", type="password")
+    if password != "Jakarta@24":
+        st.error("Password salah")
         st.stop()
-    st.write("✅ Admin mode aktif")
 
-# ======================
-# Login untuk user
-# ======================
-if mode == "user":
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if not st.session_state.authenticated:
-        st.title("🔐 Login")
-        password = st.text_input("Masukkan Password:", type="password")
-        st.markdown("""
-        <p style="text-align:center; margin-top:10px;">
-            Jika lupa password, hubungi admin di:<br>
-            <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
-                📲 Hubungi via WhatsApp
-            </a>
-        </p>
-        """, unsafe_allow_html=True)
-        if st.button("Login"):
-            if password == "Jakarta@24":
-                st.session_state.authenticated = True
-            else:
-                st.error("Password salah.")
-        if not st.session_state.authenticated:
-            st.stop()
+    st.success("Login Admin berhasil ✅")
+    approvals = load_approvals()
 
-# ======================
-# Main App Logic
-# ======================
-st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<h2 style="position:sticky; top:0; background-color:white; padding:12px; z-index:999; border-bottom:1px solid #ddd; margin:0;">
-    🧬 Topology Fiber Optic Active
-</h2>
-""", unsafe_allow_html=True)
+    st.subheader("Daftar Request Access")
+    requests = approvals[approvals["status"] == "pending"]
+    if requests.empty:
+        st.info("Tidak ada request akses baru.")
+    else:
+        for idx, row in requests.iterrows():
+            st.write(f"IP: {row['ip']} — Request: {row['request_time']}")
+            if st.button(f"Approve {row['ip']}", key=idx):
+                approvals.loc[idx, "status"] = "approved"
+                approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                save_approvals(approvals)
+                st.experimental_rerun()
 
-# Isi konten app seperti skrip asli Anda...
+    st.subheader("Daftar Semua Device")
+    st.table(approvals)
 
-st.write(f"Mode aktif: {mode}")
+else:  # mode user
+    ip_user = socket.gethostbyname(socket.gethostname())
+    approvals = load_approvals()
+    approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
 
-# Untuk admin, tampilkan halaman dashboard approve IP
-if mode == "admin":
-    st.header("Dashboard Admin")
-    st.write("Daftar IP/device yang butuh approval")
-    # Contoh tombol approve
-    if st.button("Approve IP"): st.success("IP berhasil diapprove")
+    if ip_user not in approved_ips:
+        if ip_user not in approvals["ip"].tolist():
+            approvals = approvals.append({
+                "ip": ip_user,
+                "status": "pending",
+                "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "approved_time": ""
+            }, ignore_index=True)
+            save_approvals(approvals)
 
-# Untuk user, tampilkan halaman utama topology seperti skrip asli Anda
+        st.warning("Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
+        st.markdown(
+            '<a href="https://wa.me/628977742777" target="_blank">📲 Hubungi Admin via WhatsApp</a>',
+            unsafe_allow_html=True
+        )
+        st.stop()
+
+    st.success("✅ Akses diberikan. Menampilkan Topologi...")
+    # === Letakkan skrip Topology kamu di sini ===
+    st.write("**Topology aktif untuk user ini**")
