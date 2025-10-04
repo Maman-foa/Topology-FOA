@@ -11,49 +11,62 @@ st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="
 
 st.markdown("""
     <style>
+    /* ====== FLEXBOX LAYOUT ====== */
     .container {
-        display: grid;
-        grid-template-areas: 
-            "header header"
-            "sidebar content"
-            "footer footer";
-        grid-template-columns: 280px 1fr;
-        grid-template-rows: auto 1fr auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2%;
+        align-content: start;
         height: 100vh;
-        gap: 10px;
-        padding: 0 10px;
+        padding: 8px;
     }
 
+    .item:nth-child(1),
+    .item:nth-child(4) {
+        width: 100%;
+        height: auto;
+    }
+
+    .item:nth-child(2) {
+        width: 25%;
+        height: auto;
+        flex-shrink: 0;
+    }
+
+    .item:nth-child(3) {
+        flex-grow: 1;
+        height: auto;
+    }
+
+    /* ====== AREA STYLE ====== */
     .header {
-        grid-area: header;
         background-color: #f1f3f4;
         text-align: center;
-        padding: 14px;
+        padding: 16px;
         font-size: 24px;
         font-weight: bold;
-        border-bottom: 2px solid #ddd;
         border-radius: 8px;
+        border-bottom: 2px solid #ddd;
     }
 
     .sidebar {
-        grid-area: sidebar;
         background-color: #fafafa;
         border-right: 2px solid #ddd;
         border-radius: 8px;
         padding: 12px;
         overflow-y: auto;
+        height: calc(100vh - 200px);
     }
 
     .content {
-        grid-area: content;
         background-color: #fff;
         border-radius: 8px;
         padding: 12px;
         overflow-y: auto;
+        min-height: calc(100vh - 200px);
     }
 
     .footer {
-        grid-area: footer;
         background-color: #f1f3f4;
         text-align: center;
         padding: 10px;
@@ -67,10 +80,10 @@ st.markdown("""
     </style>
 
     <div class="container">
-        <div class="header">🧬 Topology Fiber Optic Active</div>
-        <div class="sidebar" id="sidebar"></div>
-        <div class="content" id="content"></div>
-        <div class="footer" id="footer"></div>
+        <div class="item header">🧬 Topology Fiber Optic Active</div>
+        <div class="item sidebar" id="sidebar"></div>
+        <div class="item content" id="content"></div>
+        <div class="item footer" id="footer"></div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -128,24 +141,22 @@ def trigger_search():
 
 
 # ======================
-# Layout sesuai area container
+# Layout sesuai Flexbox area
 # ======================
 
-# --- Sidebar ---
-with st.container():
-    st.markdown("<div class='sidebar'>", unsafe_allow_html=True)
-    st.markdown("### ⚙️ Menu Topology")
-    menu_option = st.radio("Pilih Tampilan:", ["Topology"])
-    st.markdown("</div>", unsafe_allow_html=True)
+# --- Sidebar (item ke-2) ---
+st.markdown("<div class='sidebar'>", unsafe_allow_html=True)
+st.markdown("### ⚙️ Menu Topology")
+menu_option = st.radio("Pilih Tampilan:", ["Topology"])
+st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Content (Canvas Topology) ---
+# --- Content (item ke-3) ---
 st.markdown("<div class='content'>", unsafe_allow_html=True)
 
 canvas_height = 400
 file_path = 'SEPTEMBER_FOA - Update_2025.xlsb'
 sheet_name = 'Query CW39_2025'
 
-# hanya load data jika search sudah aktif
 if st.session_state.do_search and st.session_state.search_keyword:
     search_nodes = [s.strip() for s in st.session_state.search_keyword.split(",") if s.strip()]
     search_by = st.session_state.get("search_by", "New Site ID")
@@ -184,7 +195,7 @@ else:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Footer (Pencarian) ---
+# --- Footer (item ke-4) ---
 st.markdown("<div class='footer'>", unsafe_allow_html=True)
 st.markdown("### 🔍 Pencarian Data Topology")
 
