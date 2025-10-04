@@ -155,11 +155,10 @@ import base64
 # ===============================
 # Fungsi untuk memuat gambar lokal ke HTML
 # ===============================
-def local_image_to_html(image_path, height=None, style=""):
+def local_image_to_html(image_path, style=""):
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
-    height_attr = f'height="{height}"' if height else ""
-    return f'<img src="data:image/png;base64,{encoded_string}" {height_attr} style="object-fit:contain; {style}">'
+    return f'<img src="data:image/png;base64,{encoded_string}" style="{style}">'
 
 # ===============================
 # Set page config
@@ -167,7 +166,7 @@ def local_image_to_html(image_path, height=None, style=""):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header rapi dan logo kedua full kanan
+# CSS untuk header dua logo
 # ===============================
 st.markdown("""
 <style>
@@ -177,34 +176,38 @@ st.markdown("""
 .header {
     display: flex;
     align-items: center;
-    gap: 20px;
     width: 100%;
 }
+.logo-first {
+    flex: 0 0 auto;
+}
 .logo-second {
-    flex-grow: 1; /* membuat logo kedua memenuhi ruang tersisa */
+    flex: 1; /* membuat logo kedua mengisi ruang tersisa */
     display: flex;
+    align-items: center;
 }
 .logo-second img {
     width: 100%;
     height: auto;
     object-fit: contain;
-    max-height: 100px;
 }
 .header img {
-    max-height: 100px;
+    max-height: 150px; /* Tinggi logo maksimum */
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ===============================
-# Membuat header dengan dua logo
+# Membuat dua logo
 # ===============================
-logo1_html = local_image_to_html("HWI.png", height=100)
-logo2_html = local_image_to_html("Logo All Vendor .png", style="width:100%;")
+logo1_html = local_image_to_html("/mnt/data/c07baaeb-7248-408c-9d59-e9f97dbc84c7.png", style="max-height:150px;")
+logo2_html = local_image_to_html("Logo All Vendor .png", style="height:150px; width:100%; object-fit:contain;")
 
 st.markdown(f"""
 <div class="header">
-    {logo1_html}
+    <div class="logo-first">
+        {logo1_html}
+    </div>
     <div class="logo-second">
         {logo2_html}
     </div>
