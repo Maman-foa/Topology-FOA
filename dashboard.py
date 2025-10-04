@@ -3,11 +3,11 @@ import pandas as pd
 import socket
 import os
 from datetime import datetime
+import requests
 
 # ======================
-# Fungsi untuk dapatkan public IP
+# Fungsi dapatkan public IP
 # ======================
-import requests
 def get_public_ip():
     try:
         return requests.get("https://api.ipify.org").text
@@ -30,9 +30,10 @@ def save_approvals(df):
 # ======================
 # Dapatkan mode (admin/user)
 # ======================
-mode = st.query_params.get("mode", ["user"])[0]
+mode = st.query_params.get("mode", ["user"])[0].lower()
 
 if mode == "admin":
+    # --- Mode Admin ---
     st.title("🔧 Admin Dashboard")
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
@@ -58,7 +59,8 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(approvals)
 
-else:  # mode user
+elif mode == "user":
+    # --- Mode User ---
     ip_user = get_public_ip()
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
@@ -83,4 +85,7 @@ else:  # mode user
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     st.write("**Topology aktif untuk user ini**")
-    # Letakkan skrip topology utama kamu di sini
+    # ===== LETAKKAN SCRIPT TOPOLOGY =====
+
+else:
+    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
