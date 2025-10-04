@@ -5,6 +5,18 @@ import os
 from datetime import datetime
 
 # ======================
+# Hapus warning Streamlit deprecated
+# ======================
+st.markdown(
+    """
+    <style>
+    .stAlert {display: none !important;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ======================
 # Simpan file approval
 # ======================
 APPROVAL_FILE = "approved_devices.csv"
@@ -18,9 +30,9 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode (admin/user)
+# Dapatkan mode (admin/user) — update sesuai Streamlit terbaru
 # ======================
-mode = st.experimental_get_query_params().get("mode", ["user"])[0]
+mode = st.query_params.get("mode", ["user"])[0]
 
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
@@ -48,7 +60,7 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(approvals)
 
-else:  # mode user
+elif mode == "user":
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
@@ -73,3 +85,6 @@ else:  # mode user
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     # === Letakkan skrip Topology kamu di sini ===
     st.write("**Topology aktif untuk user ini**")
+
+else:
+    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
