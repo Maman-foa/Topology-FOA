@@ -149,7 +149,7 @@ if not found:
     save_approved_devices(devices)
     found = {"ip": ip, "hostname": hostname, "approved": False}
 
-st.title("🧬 National Topology")
+st.title('HWI.png')
 
 if not found.get("approved"):
     st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
