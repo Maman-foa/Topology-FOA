@@ -166,16 +166,22 @@ def local_image_to_html(image_path, width="100%"):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header penuh lebar
+# CSS untuk header sticky penuh lebar
 # ===============================
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 1rem;
+    padding-top: 0rem;
 }
 .header {
+    position: sticky;
+    top: 0;
+    background-color: white; /* warna background header */
+    z-index: 9999;
     width: 100%;
     text-align: center;
+    padding: 5px 0;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
 }
 .header img {
     max-height: 150px; /* atur tinggi logo */
@@ -192,6 +198,12 @@ st.markdown(f"""
     {image_html}
 </div>
 """, unsafe_allow_html=True)
+
+# ===============================
+# Contoh konten panjang supaya bisa di scroll
+# ===============================
+for i in range(50):
+    st.write(f"Konten nomor {i+1}")
 
 
 if not found.get("approved"):
