@@ -151,10 +151,6 @@ if not found:
 
 import streamlit as st
 
-st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
-
-import streamlit as st
-
 # Set config
 st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
 
@@ -176,6 +172,7 @@ with col1:
     st.image("HWI.png", width=50)  # logo
 with col2:
     st.title("Fiber Optic Analyzer")
+
 
 
 if not found.get("approved"):
