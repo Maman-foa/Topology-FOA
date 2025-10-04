@@ -18,20 +18,12 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode (admin/user) dengan st.query_params
+# Dapatkan mode (admin/user)
 # ======================
-mode = st.query_params.get("mode", ["user"])[0].lower()
+mode = st.experimental_get_query_params().get("mode", ["user"])[0]
 
-if mode not in ["admin", "user"]:
-    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
-    st.stop()
-
-# ======================
-# Mode Admin
-# ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
-
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah")
@@ -42,7 +34,6 @@ if mode == "admin":
 
     st.subheader("Daftar Request Access")
     requests = approvals[approvals["status"] == "pending"]
-
     if requests.empty:
         st.info("Tidak ada request akses baru.")
     else:
@@ -57,26 +48,22 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(approvals)
 
-# ======================
-# Mode User
-# ======================
-else:
+else:  # mode user
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
 
     if ip_user not in approved_ips:
         if ip_user not in approvals["ip"].tolist():
-            new_request = pd.DataFrame([{
+            approvals = approvals.append({
                 "ip": ip_user,
                 "status": "pending",
                 "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "approved_time": ""
-            }])
-            approvals = pd.concat([approvals, new_request], ignore_index=True)
+            }, ignore_index=True)
             save_approvals(approvals)
 
-        st.warning("⚠️ Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
+        st.warning("Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
         st.markdown(
             '<a href="https://wa.me/628977742777" target="_blank">📲 Hubungi Admin via WhatsApp</a>',
             unsafe_allow_html=True
