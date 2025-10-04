@@ -30,21 +30,29 @@ def save_approvals(df):
 # ======================
 # Dapatkan mode (admin/user)
 # ======================
-mode = st.query_params.get("mode", ["user"])[0].lower()
+if "mode" in st.query_params:
+    mode = st.query_params["mode"][0].lower()
+else:
+    mode = "user"
 
+# ======================
+# Mode Admin
+# ======================
 if mode == "admin":
-    # --- Mode Admin ---
     st.title("🔧 Admin Dashboard")
+
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah")
         st.stop()
 
     st.success("Login Admin berhasil ✅")
+
     approvals = load_approvals()
 
     st.subheader("Daftar Request Access")
     requests = approvals[approvals["status"] == "pending"]
+
     if requests.empty:
         st.info("Tidak ada request akses baru.")
     else:
@@ -59,21 +67,23 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(approvals)
 
-elif mode == "user":
-    # --- Mode User ---
+# ======================
+# Mode User
+# ======================
+else:
     ip_user = get_public_ip()
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
 
     if ip_user not in approved_ips:
         if ip_user not in approvals["ip"].tolist():
-            new_row = pd.DataFrame([{
+            new_request = pd.DataFrame([{
                 "ip": ip_user,
                 "status": "pending",
                 "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "approved_time": ""
             }])
-            approvals = pd.concat([approvals, new_row], ignore_index=True)
+            approvals = pd.concat([approvals, new_request], ignore_index=True)
             save_approvals(approvals)
 
         st.warning("⚠️ Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
@@ -84,8 +94,5 @@ elif mode == "user":
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
+    # === Letakkan skrip Topology kamu di sini ===
     st.write("**Topology aktif untuk user ini**")
-    # ===== LETAKKAN SCRIPT TOPOLOGY =====
-
-else:
-    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
