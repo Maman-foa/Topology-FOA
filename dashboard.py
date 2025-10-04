@@ -155,11 +155,10 @@ import base64
 # ===============================
 # Fungsi untuk memuat gambar lokal ke HTML
 # ===============================
-def local_image_to_html(image_path, height=None):
+def local_image_to_html(image_path, width="100%"):
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
-    height_attr = f'height="{height}"' if height else ""
-    return f'<img src="data:image/png;base64,{encoded_string}" {height_attr} style="object-fit:contain;">'
+    return f'<img src="data:image/png;base64,{encoded_string}" style="width:{width}; height:auto; object-fit:contain;">'
 
 # ===============================
 # Set page config
@@ -167,7 +166,7 @@ def local_image_to_html(image_path, height=None):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header rapi tanpa judul
+# CSS untuk header penuh lebar
 # ===============================
 st.markdown("""
 <style>
@@ -175,16 +174,19 @@ st.markdown("""
     padding-top: 1rem;
 }
 .header {
-    display: flex;
-    align-items: center;
+    width: 100%;
+    text-align: center;
+}
+.header img {
+    max-height: 150px; /* atur tinggi logo */
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ===============================
-# Membuat header hanya logo
+# Membuat header banner logo penuh lebar
 # ===============================
-image_html = local_image_to_html("Logo All Vendor .png", height=100)
+image_html = local_image_to_html("Logo All Vendor .png")
 st.markdown(f"""
 <div class="header">
     {image_html}
