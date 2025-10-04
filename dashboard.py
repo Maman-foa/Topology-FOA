@@ -80,6 +80,25 @@ if mode == "admin":
                     st.experimental_rerun()
 
     st.subheader("Daftar Semua Device")
+    if not approvals.empty:
+        for idx, row in approvals.iterrows():
+            col1, col2, col3 = st.columns([2,1,1])
+            col1.write(f"IP: {row['ip']} — Status: {row['status']} — Request: {row['request_time']}")
+            with col2:
+                if st.button(f"Approve", key=f"approve_all_{idx}"):
+                    approvals.loc[idx, "status"] = "approved"
+                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+            with col3:
+                if st.button(f"Reject", key=f"reject_all_{idx}"):
+                    approvals.loc[idx, "status"] = "rejected"
+                    approvals.loc[idx, "approved_time"] = ""
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+    else:
+        st.info("Belum ada device yang terdaftar.")
+
     st.table(approvals)
 
 # ======================
@@ -109,6 +128,3 @@ elif mode == "user":
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     st.write("**Topology aktif untuk user ini**")
-
-    # ======= Place your topology script here =======
-    st.info("Tempat skrip Topology akan ditampilkan di sini.")
