@@ -60,10 +60,6 @@ import socket
 import uuid
 
 def get_device_info():
-    try:
-        ip = socket.gethostbyname(socket.gethostname())
-    except:
-        ip = "Unknown"
     hostname = socket.gethostname()
     mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                          for ele in range(0,8*6,8)][::-1])
