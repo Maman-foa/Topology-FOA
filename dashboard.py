@@ -151,28 +151,42 @@ if not found:
 
 import streamlit as st
 
-# Set config
+# ===============================
+# Set page config
+# ===============================
 st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
 
-# CSS untuk mengurangi jarak vertikal
+# ===============================
+# CSS untuk header rapi
+# ===============================
 st.markdown("""
     <style>
     .block-container {
-        padding-top: -10rem;  /* ubah sesuai kebutuhan */
+        padding-top: 1rem;
     }
-    .stImage {
-        margin-top: -10px;  /* mengangkat logo sedikit */
+    .header {
+        display: flex;
+        align-items: center;  /* sejajarkan logo dan teks */
+        gap: 10px;            /* jarak antara logo dan judul */
+    }
+    .header img {
+        height: 50px;         /* ukuran logo */
+    }
+    .header h1 {
+        margin: 0;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Menampilkan logo dan judul
-col1, col2 = st.columns([1, 5])
-with col1:
-    st.image("HWI.png", width=50)  # logo
-with col2:
-    st.title("Fiber Optic Analyzer")
-
+# ===============================
+# Header dengan logo + judul
+# ===============================
+st.markdown("""
+    <div class="header">
+        <img src="HWI.png" alt="Logo">
+        <h1>Fiber Optic Analyzer</h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 if not found.get("approved"):
