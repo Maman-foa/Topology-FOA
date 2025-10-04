@@ -68,7 +68,7 @@ def login():
         """
         <p style="text-align:center; margin-top:10px;">
             Jika lupa password, hubungi admin di:<br>
-            <a href="https://wa.me/6281234567890" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
+            <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
                 📲 Hubungi via WhatsApp
             </a>
         </p>
