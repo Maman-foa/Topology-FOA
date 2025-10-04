@@ -54,13 +54,18 @@ def save_approved_devices(data):
 # ======================
 # Dapatkan info device/IP
 # ======================
+import requests
+
 def get_device_info():
     try:
-        ip = socket.gethostbyname(socket.gethostname())
+        # deteksi IP publik dari jaringan
+        ip = requests.get('https://api.ipify.org').text.strip()
     except:
-        ip = "Unknown"
+        # fallback ke IP lokal jika offline
+        ip = socket.gethostbyname(socket.gethostname())
     hostname = socket.gethostname()
     return ip, hostname
+
 
 # ======================
 # Mode app (admin / user)
