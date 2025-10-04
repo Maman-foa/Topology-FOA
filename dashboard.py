@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 import re
 
 # ======================
-# Config Streamlit
+# Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
 st.markdown(
@@ -23,7 +23,7 @@ st.markdown(
 )
 
 # ======================
-# File Approval
+# Approval file
 # ======================
 APPROVAL_FILE = "approved_devices.csv"
 if not os.path.exists(APPROVAL_FILE):
@@ -36,16 +36,17 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode
+# Mode check
 # ======================
-mode = st.query_params.get("mode", ["user"])[0].lower()
+params = st.experimental_get_query_params()
+mode = params.get("mode", [""])[0].lower()
 
 if mode not in ["admin", "user"]:
-    st.error("⚠️ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
+    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
 
 # ======================
-# Mode Admin
+# Admin Mode
 # ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
@@ -74,21 +75,21 @@ if mode == "admin":
     st.table(approvals)
 
 # ======================
-# Mode User
+# User Mode
 # ======================
-else:
+elif mode == "user":
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
 
     if ip_user not in approved_ips:
         if ip_user not in approvals["ip"].tolist():
-            approvals = approvals.append({
+            approvals = pd.concat([approvals, pd.DataFrame([{
                 "ip": ip_user,
                 "status": "pending",
                 "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "approved_time": ""
-            }, ignore_index=True)
+            }])], ignore_index=True)
             save_approvals(approvals)
 
         st.warning("⚠️ Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
@@ -101,4 +102,5 @@ else:
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     st.write("**Topology aktif untuk user ini**")
 
-    # === Tambahkan kode Topology kamu di sini ===
+    # ======= Place your topology script here =======
+    st.info("Tempat skrip Topology akan ditampilkan di sini.")
