@@ -6,14 +6,6 @@ import socket
 import re
 import json
 import os
-import uuid
-
-# ======================
-# Fungsi utilitas tambahan
-# ======================
-def strmac(s):
-    """Normalisasi string: trim, lowercase, hapus spasi ekstra."""
-    return str(s).strip().lower() if s is not None else ""
 
 # ======================
 # Konfigurasi halaman
@@ -49,7 +41,7 @@ if not os.path.exists(APPROVAL_FILE):
         json.dump([], f)
 
 # ======================
-# Fungsi load/save approval
+# Fungsi utilitas approval
 # ======================
 def load_approved_devices():
     with open(APPROVAL_FILE, "r") as f:
@@ -60,20 +52,26 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Fungsi mendapatkan device info
+# Dapatkan info device/IP
 # ======================
+import requests
+
+import socket
+import uuid
+
 def get_device_info():
     hostname = socket.gethostname()
     mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
                          for ele in range(0,8*6,8)][::-1])
     return mac_addr, hostname
 
+
 # ======================
-# Mode aplikasi
+# Mode app (admin / user)
 # ======================
-query_params = st.experimental_get_query_params()
-mode = query_params.get("mode", ["user"])[0]
-mode = strmac(mode.lower())
+query_params = st.query_params
+mode = query_params.get("mode", "user")
+mode = mode.lower().strip()
 
 if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
@@ -85,6 +83,7 @@ if mode not in ["admin", "user"]:
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
 
+    # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah ❌")
@@ -92,7 +91,10 @@ if mode == "admin":
 
     st.success("Login Admin berhasil ✅")
 
+    # Load daftar device dari file JSON
     devices = load_approved_devices()
+
+    # Bagi menjadi pending & approved
     pending_devices = [d for d in devices if not d.get("approved", False)]
     approved_devices = [d for d in devices if d.get("approved", False)]
 
@@ -101,20 +103,20 @@ if mode == "admin":
         for dev in pending_devices:
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                st.write(f"**mac:** {dev['mac']}")
+                st.write(f"**IP:** {dev['ip']}")
             with col2:
                 st.write(f"**Hostname:** {dev['hostname']}")
             with col3:
-                if st.button("✅ Approve", key=f"approve_{dev['mac']}"):
+                if st.button("✅ Approve", key=f"approve_{dev['ip']}"):
                     dev["approved"] = True
                     save_approved_devices(devices)
-                    st.success(f"Device {dev['mac']} disetujui ✅")
-                    st.experimental_rerun()
-                if st.button("❌ Reject", key=f"reject_{dev['mac']}"):
+                    st.success(f"Device {dev['ip']} disetujui ✅")
+                    st.rerun()
+                if st.button("❌ Reject", key=f"reject_{dev['ip']}"):
                     devices.remove(dev)
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['mac']} ditolak ❌")
-                    st.experimental_rerun()
+                    st.warning(f"Device {dev['ip']} ditolak ❌")
+                    st.rerun()
     else:
         st.info("Tidak ada device pending approval.")
 
@@ -123,47 +125,50 @@ if mode == "admin":
         for dev in approved_devices:
             col1, col2 = st.columns([3, 1])
             with col1:
-                st.write(f"✅ {dev['mac']} – {dev['hostname']}")
+                st.write(f"✅ {dev['ip']} – {dev['hostname']}")
             with col2:
-                if st.button("❌ Reject", key=f"unapprove_{dev['mac']}"):
+                if st.button("❌ Reject", key=f"unapprove_{dev['ip']}"):
                     dev["approved"] = False
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['mac']} diubah menjadi pending ❌")
-                    st.experimental_rerun()
+                    st.warning(f"Device {dev['ip']} diubah menjadi pending ❌")
+                    st.rerun()
     else:
         st.info("Belum ada device yang diapprove.")
 
     st.stop()
 
-# ======================
-# Mode User
-# ======================
-mac, hostname = get_device_info()
+# ==========================================================
+# ====================== MODE USER ==========================
+# ==========================================================
+ip, hostname = get_device_info()
 devices = load_approved_devices()
-found = next((d for d in devices if d["mac"] == mac), None)
+found = next((d for d in devices if d["ip"] == ip), None)
 
 if not found:
-    devices.append({"mac": mac, "hostname": hostname, "approved": False})
+    devices.append({"ip": ip, "hostname": hostname, "approved": False})
     save_approved_devices(devices)
-    found = {"mac": mac, "hostname": hostname, "approved": False}
+    found = {"ip": ip, "hostname": hostname, "approved": False}
 
 st.title("🧬 National Topology")
 
 if not found.get("approved"):
-    st.warning("⚠️ Device/mac Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
+    st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
     st.markdown("""
         <p style="text-align:center;">
             📲 <a href="https://wa.me/628977742777" target="_blank" 
             style="text-decoration:none; color:green; font-weight:bold;">Hubungi Admin via WhatsApp</a>
         </p>
     """, unsafe_allow_html=True)
-    st.info(f"**mac:** {mac}\n\n**Hostname:** {hostname}")
+    st.info(f"**IP:** {ip}\n\n**Hostname:** {hostname}")
     st.stop()
 
+# ======================
+# Setelah approved
+# ======================
 st.success("✅ Akses diberikan. Menampilkan Topology...")
 
 # ======================
-# Fungsi highlight
+# Fungsi Highlight
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
@@ -203,7 +208,7 @@ with col3:
         placeholder="Contoh: 16SBY0267, 16SBY0497",
         on_change=trigger_search
     )
-    search_nodes = [s.strmac() for s in search_input.split(",") if s.strmac()]
+    search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
 canvas_height = 350
 
@@ -241,7 +246,7 @@ else:
             file_path = 'SEPTEMBER_FOA - Update_2025.xlsb'
             sheet_name = 'Query CW39_2025'
             df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
-            df.columns = df.columns.str.strmac()
+            df.columns = df.columns.str.strip()
 
             col_site = get_col(df, "New Site ID")
             col_dest = get_col(df, "New Destination", alt="New Destenation")
@@ -286,13 +291,13 @@ else:
                             unsafe_allow_html=True
                         )
 
-                    ring_df[col_site] = ring_df[col_site].astype(str).str.strmac()
-                    ring_df[col_dest] = ring_df[col_dest].astype(str).str.strmac().replace({"nan": ""})
+                    ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
+                    ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
 
                     nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
-                    nodes_order = [str(n).strmac() for n in nodes_order if pd.notna(n) and str(n).strmac().lower() not in ["", "none"]]
-                    valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strmac().unique())
-                    valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strmac().unique())
+                    nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "none"]]
+                    valid_dest_nodes = set(ring_df[col_dest].dropna().astype(str).str.strip().unique())
+                    valid_site_nodes = set(ring_df[col_site].dropna().astype(str).str.strip().unique())
                     nodes_order = [n for n in nodes_order if n in valid_dest_nodes or n in valid_site_nodes]
 
                     net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", directed=False)
@@ -300,8 +305,8 @@ else:
 
                     node_degree = {}
                     for _, r in ring_df.iterrows():
-                        s = str(r[col_site]).strmac()
-                        t = str(r[col_dest]).strmac()
+                        s = str(r[col_site]).strip()
+                        t = str(r[col_dest]).strip()
                         if s:
                             node_degree[s] = node_degree.get(s, 0) + 1
                         if t:
@@ -324,9 +329,9 @@ else:
 
                     added_nodes = set()
                     def get_node_info(nid):
-                        df_match = ring_df[ring_df[col_site].astype(str).str.strmac() == nid]
+                        df_match = ring_df[ring_df[col_site].astype(str).str.strip() == nid]
                         if df_match.empty:
-                            df_match = ring_df[ring_df[col_dest].astype(str).str.strmac() == nid]
+                            df_match = ring_df[ring_df[col_dest].astype(str).str.strip() == nid]
                         if df_match.empty:
                             return {"Fiber Type": "", "Site Name": "", "Host Name": "", "FLP Vendor": ""}
                         row0 = df_match.iloc[0]
@@ -339,7 +344,7 @@ else:
 
                     for nid in nodes_order:
                         info = get_node_info(nid)
-                        fiber = info["Fiber Type"].strmac() if info["Fiber Type"] else ""
+                        fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
                         if node_degree.get(nid, 0) == 1 and fiber.lower() not in ["p0_1"]:
                             fiber = "P0"
                         f_low = fiber.lower()
@@ -381,8 +386,8 @@ else:
                         added_nodes.add(nid)
 
                     for _, r in ring_df.iterrows():
-                        s = str(r[col_site]).strmac()
-                        t = str(r[col_dest]).strmac()
+                        s = str(r[col_site]).strip()
+                        t = str(r[col_dest]).strip()
                         if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
                             flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                             if s not in added_nodes:
