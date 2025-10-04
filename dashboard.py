@@ -200,7 +200,7 @@ st.markdown("""
 # Membuat header dengan dua logo
 # ===============================
 logo1_html = local_image_to_html("HWI.png", height=100)
-logo2_html = local_image_to_html("Logo All Vendor .png", style="width:100%;")
+logo2_html = local_image_to_html("Logo All Vendor .png", style="width:300%;")
 
 st.markdown(f"""
 <div class="header">
