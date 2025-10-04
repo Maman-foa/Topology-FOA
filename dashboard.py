@@ -10,7 +10,7 @@ import os
 # ======================
 # Konfigurasi halaman
 # ======================
-st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide", page_icon='HWI.png')
+st.set_page_config(page_title="Fiber Optic Active", layout="wide", page_icon='HWI.png')
 
 st.markdown("""
 <style>
@@ -164,7 +164,7 @@ def local_image_to_html(image_path, height=None):
 # ===============================
 # Set page config
 # ===============================
-st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
+st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
 # CSS untuk header rapi
@@ -192,7 +192,7 @@ image_html = local_image_to_html("HWI.png", height=50)
 st.markdown(f"""
 <div class="header">
     {image_html}
-    <h1>Fiber Optic Analyzer</h1>
+    <h1>Fiber Optic Active</h1>
 </div>
 """, unsafe_allow_html=True)
 
