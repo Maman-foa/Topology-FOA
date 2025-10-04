@@ -167,7 +167,7 @@ def local_image_to_html(image_path, height=None):
 st.set_page_config(page_title="Fiber Optic Active", layout="wide")
 
 # ===============================
-# CSS untuk header rapi
+# CSS untuk header rapi tanpa judul
 # ===============================
 st.markdown("""
 <style>
@@ -176,23 +176,18 @@ st.markdown("""
 }
 .header {
     display: flex;
-    align-items: center;  /* sejajarkan logo dan teks */
-    gap: 10px;            /* jarak antar elemen */
-}
-.header h1 {
-    margin: 0;
+    align-items: center;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ===============================
-# Membuat header dengan logo + judul
+# Membuat header hanya logo
 # ===============================
 image_html = local_image_to_html("Logo All Vendor .png", height=100)
 st.markdown(f"""
 <div class="header">
     {image_html}
-    <h1>Fiber Optic Active</h1>
 </div>
 """, unsafe_allow_html=True)
 
