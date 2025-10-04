@@ -125,7 +125,7 @@ if not found:
     save_approved_devices(devices)
     found = {"ip": ip, "hostname": hostname, "approved": False}
 
-st.title("🌐 Fiber Optic Topology")
+st.title("🧬 National Topology")
 
 if not found.get("approved"):
     st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
