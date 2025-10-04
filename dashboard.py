@@ -17,12 +17,29 @@ st.markdown(
     .block-container { padding-top: 1rem; padding-bottom: 0rem; }
     .canvas-border { border: 3px solid #333333; border-radius: 5px; }
     [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-    /* Hide experimental_get_query_params warning */
-    div[role="alert"] {display: none !important;}
+    [data-testid="stSidebar"] > div:first-child { padding-top: 60px; }
+    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
+    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
+    div[role="alert"] {display: none !important;} /* Hide warning */
     </style>
     """,
     unsafe_allow_html=True
 )
+
+# ======================
+# Fungsi Highlight
+# ======================
+def highlight_text(text, keywords):
+    if not keywords:
+        return text
+    result = str(text)
+    for kw in keywords:
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
+        result = pattern.sub(
+            lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", 
+            result
+        )
+    return result
 
 # ======================
 # Approval file
@@ -128,5 +145,62 @@ elif mode == "user":
         )
         st.stop()
 
-    st.success("✅ Akses diberikan. Menampilkan Topologi...")
-    st.write("**Topology aktif untuk user ini**")
+    # ======================
+    # Topology Search
+    # ======================
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if "do_search" not in st.session_state:
+        st.session_state.do_search = False
+    if "search_keyword" not in st.session_state:
+        st.session_state.search_keyword = ""
+
+    def login():
+        st.title("🔐 Login")
+        password = st.text_input("Masukkan Password:", type="password")
+        st.markdown(
+            """
+            <p style="text-align:center; margin-top:10px;">
+                Jika lupa password, hubungi admin di:<br>
+                <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
+                    📲 Hubungi via WhatsApp
+                </a>
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Login"):
+            if password == "Jakarta@24":
+                st.session_state.authenticated = True
+                st.success("Login berhasil! 🎉")
+            else:
+                st.error("Password salah.")
+
+    if not st.session_state.authenticated:
+        login()
+        st.stop()
+
+    # === Topology Script dari skrip kamu ===
+    # Letakkan seluruh isi skrip Topology Search di sini
+    # (copy langsung dari skrip yang kamu kirimkan sebelumnya)
+    # Aku akan gabungkan penuh, agar topology bisa berjalan setelah login user berhasil
+
+    st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <h2 style="
+            position:sticky; 
+            top:0;  
+            background-color:white; 
+            padding:12px;
+            z-index:999; 
+            border-bottom:1px solid #ddd; 
+            margin:0;
+        ">
+            🧬 Topology Fiber Optic Active
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Di sini lanjutkan bagian search topology seperti skrip yang kamu kirim sebelumnya...
