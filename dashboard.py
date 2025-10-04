@@ -171,101 +171,86 @@ if not found.get("approved"):
 
 st.success("✅ Akses diberikan. Menampilkan Topology...")
 
-# Contoh tampilan sederhana
-st.subheader("🔎 Pencarian Node")
-search_query = st.text_input("Masukkan keyword untuk cari node (contoh: Ring atau Site ID):")
+    # ======================
+    # Fungsi Highlight
+    # ======================
+    def highlight_text(text, keywords):
+        if not keywords:
+            return text
+        result = str(text)
+        for kw in keywords:
+            pattern = re.compile(re.escape(kw), re.IGNORECASE)
+            result = pattern.sub(
+                lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", 
+                result
+            )
+        return result
 
-# Data dummy
-data = {
-    "Node A": ["A1", "A2", "A3"],
-    "Node B": ["B1", "B2", "B3"],
-    "Link": ["Fiber1", "Fiber2", "Fiber3"]
-}
-df = pd.DataFrame(data)
+    # ======================
+    # Session State
+    # ======================
+    if "do_search" not in st.session_state:
+        st.session_state.do_search = False
+    if "search_keyword" not in st.session_state:
+        st.session_state.search_keyword = ""
 
-if search_query:
-    mask = df.apply(lambda row: row.astype(str).str.contains(search_query, case=False)).any(axis=1)
-    df_filtered = df[mask]
-else:
-    df_filtered = df
+    def trigger_search():
+        st.session_state.do_search = True
 
-st.dataframe(df_filtered)
+    # ======================
+    # Menu + Search
+    # ======================
+    col1, col2, col3 = st.columns([1,2,2])
+    with col1:
+        menu_option = st.radio("Pilih Tampilan:", ["Topology"])
+    with col2:
+        search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
+    with col3:
+        search_input = st.text_input(
+            "🔍 Masukkan keyword (pisahkan dengan koma):",
+            key="search_keyword",
+            placeholder="Contoh: 16SBY0267, 16SBY0497",
+            on_change=trigger_search
+        )
+        search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
-# PyVis visualisasi
-net = Network(height="550px", width="100%", bgcolor="#222222", font_color="white")
-for _, row in df_filtered.iterrows():
-    net.add_node(row["Node A"], label=row["Node A"])
-    net.add_node(row["Node B"], label=row["Node B"])
-    net.add_edge(row["Node A"], row["Node B"], title=row["Link"])
+    canvas_height = 350
 
-net.save_graph("topology.html")
-HtmlFile = open("topology.html", "r", encoding="utf-8")
-components.html(HtmlFile.read(), height=550)
+    # ======================
+    # Helper function untuk kolom
+    # ======================
+    def get_col(df, name, alt=None):
+        if name in df.columns:
+            return name
+        if alt and alt in df.columns:
+            return alt
+        return None
 
-# ======================
-# Session state user
-# ======================
-if "do_search" not in st.session_state:
-    st.session_state.do_search = False
-if "search_keyword" not in st.session_state:
-    st.session_state.search_keyword = ""
-
-# ======================
-# Fungsi pencarian
-# ======================
-def trigger_search():
-    st.session_state.do_search = True
-
-# ======================
-# Menu + Search
-# ======================
-col1, col2, col3 = st.columns([1,2,2])
-with col1:
-    menu_option = st.radio("Pilih Tampilan:", ["Topology"])
-with col2:
-    search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
-with col3:
-    search_input = st.text_input(
-        "🔍 Masukkan keyword (pisahkan dengan koma):",
-        key="search_keyword",
-        placeholder="Contoh: 16SBY0267, 16SBY0497",
-        on_change=trigger_search
+    # ======================
+    # Main Area
+    # ======================
+    st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <h2 style="
+            position:sticky; 
+            top:0;  
+            background-color:white; 
+            padding:12px;
+            z-index:999; 
+            border-bottom:1px solid #ddd; 
+            margin:0;
+        ">
+            🧬 Topology Fiber Optic Active
+        </h2>
+        """,
+        unsafe_allow_html=True
     )
-    search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
 
-canvas_height = 350
-
-# ======================
-# Helper get_col
-# ======================
-def get_col(df, name, alt=None):
-    if name in df.columns:
-        return name
-    if alt and alt in df.columns:
-        return alt
-    return None
-
-# ======================
-# Tampilan utama user
-# ======================
-st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<h2 style="
-    position:sticky;
-    top:0;
-    background-color:white;
-    padding:12px;
-    z-index:999;
-    border-bottom:1px solid #ddd;
-    margin:0;">
-    🧬 Topology Fiber Optic Active
-</h2>
-""", unsafe_allow_html=True)
-
-if not st.session_state.do_search or not search_nodes:
-    st.info("ℹ️ Pilih kategori, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk tampilkan topology.")
-else:
-    with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
+    if not st.session_state.do_search or not search_nodes:
+        st.info("ℹ️ Pilih kategori di atas, masukkan keyword (pisahkan dengan koma), lalu tekan Enter untuk menampilkan topology.")
+    else:
+        with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
             file_path = 'SEPTEMBER_FOA - Update_2025.xlsb'
             sheet_name = 'Query CW39_2025'
             df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
@@ -442,3 +427,4 @@ else:
                     for col in display_df.columns:
                         display_df[col] = display_df[col].apply(lambda x: highlight_text(x, search_nodes))
                     st.markdown(display_df.to_html(escape=False), unsafe_allow_html=True)
+
