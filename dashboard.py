@@ -59,16 +59,30 @@ if "search_keyword" not in st.session_state:
 # ======================
 # Password Login
 # ======================
-st.markdown("[📲 Hubungi via WhatsApp](https://wa.me/6281234567890)", unsafe_allow_html=True)
 def login():
     st.title("🔐 Login")
     password = st.text_input("Masukkan Password:", type="password")
+
+    # Tambahkan link WhatsApp di bawah input password
+    st.markdown(
+        """
+        <p style="text-align:center; margin-top:10px;">
+            Jika lupa password, hubungi admin di:<br>
+            <a href="https://wa.me/6281234567890" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
+                📲 Hubungi via WhatsApp
+            </a>
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
     if st.button("Login"):
         if password == "Jakarta@24":
             st.session_state.authenticated = True
             st.success("Login berhasil! 🎉")
         else:
             st.error("Password salah.")
+
 
 # Jika belum login, stop di sini
 if not st.session_state.authenticated:
