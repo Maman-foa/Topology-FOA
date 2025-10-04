@@ -78,56 +78,60 @@ if mode not in ["admin", "user"]:
 # ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
+
+    # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
-        st.error("Password salah")
+        st.error("Password salah ❌")
         st.stop()
 
     st.success("Login Admin berhasil ✅")
-    approvals = load_approvals()
 
-    st.subheader("Daftar Request Access")
-    requests = approvals[approvals["status"] == "pending"]
-    if requests.empty:
-        st.info("Tidak ada request akses baru.")
-    else:
-        for idx, row in requests.iterrows():
-            st.write(f"IP: {row['ip']} — Request: {row['request_time']}")
-            col1, col2 = st.columns([1,1])
+    # Load daftar device dari file JSON
+    devices = load_approved_devices()
+
+    # Bagi menjadi pending & approved
+    pending_devices = [d for d in devices if not d.get("approved", False)]
+    approved_devices = [d for d in devices if d.get("approved", False)]
+
+    st.subheader("📥 Pending Approval")
+    if pending_devices:
+        for dev in pending_devices:
+            col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                if st.button(f"Approve {row['ip']}", key=f"approve_{idx}"):
-                    approvals.loc[idx, "status"] = "approved"
-                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                st.write(f"**IP:** {dev['ip']}")
             with col2:
-                if st.button(f"Reject {row['ip']}", key=f"reject_{idx}"):
-                    approvals.loc[idx, "status"] = "rejected"
-                    approvals.loc[idx, "approved_time"] = ""
-                    save_approvals(approvals)
-                    st.experimental_rerun()
-
-    st.subheader("Daftar Semua Device")
-    if not approvals.empty:
-        for idx, row in approvals.iterrows():
-            col1, col2, col3 = st.columns([2,1,1])
-            col1.write(f"IP: {row['ip']} — Status: {row['status']} — Request: {row['request_time']}")
-            with col2:
-                if st.button(f"Approve", key=f"approve_all_{idx}"):
-                    approvals.loc[idx, "status"] = "approved"
-                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                st.write(f"**Hostname:** {dev['hostname']}")
             with col3:
-                if st.button(f"Reject", key=f"reject_all_{idx}"):
-                    approvals.loc[idx, "status"] = "rejected"
-                    approvals.loc[idx, "approved_time"] = ""
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                if st.button("✅ Approve", key=f"approve_{dev['ip']}"):
+                    dev["approved"] = True
+                    save_approved_devices(devices)
+                    st.success(f"Device {dev['ip']} disetujui ✅")
+                    st.rerun()
+                if st.button("❌ Reject", key=f"reject_{dev['ip']}"):
+                    devices.remove(dev)
+                    save_approved_devices(devices)
+                    st.warning(f"Device {dev['ip']} ditolak ❌")
+                    st.rerun()
     else:
-        st.info("Belum ada device yang terdaftar.")
+        st.info("Tidak ada device pending approval.")
 
-    st.table(approvals)
+    st.subheader("📋 Device Approved")
+    if approved_devices:
+        for dev in approved_devices:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"✅ {dev['ip']} – {dev['hostname']}")
+            with col2:
+                if st.button("❌ Reject", key=f"unapprove_{dev['ip']}"):
+                    dev["approved"] = False
+                    save_approved_devices(devices)
+                    st.warning(f"Device {dev['ip']} diubah menjadi pending ❌")
+                    st.rerun()
+    else:
+        st.info("Belum ada device yang diapprove.")
+
+    st.stop()
 
 # ==========================================================
 # ====================== MODE USER ==========================
