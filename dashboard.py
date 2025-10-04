@@ -165,7 +165,7 @@ if not found.get("approved"):
 # ======================
 # Setelah approved
 # ======================
-st.success("✅ Akses diberikan. Menampilkan Topology...")
+st.success("✅ Selamat Anda berhasil login...")
 
 # ======================
 # Fungsi Highlight
