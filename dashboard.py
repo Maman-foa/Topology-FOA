@@ -53,39 +53,25 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Migrasi device lama
-# ======================
-def migrate_devices():
-    devices = load_approved_devices()
-    updated = False
-    for dev in devices:
-        if "ip" in dev and "mac" not in dev:
-            dev["mac"] = dev.pop("ip")
-            updated = True
-    if updated:
-        save_approved_devices(devices)
-
-migrate_devices()
-
-# ======================
 # Dapatkan info device/MAC
 # ======================
 def get_device_info():
     hostname = socket.gethostname()
     mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
-                         for ele in range(0,8*6,8)][::-1])
+                         for ele in range(0, 8*6, 8)][::-1])
     return mac_addr, hostname
 
 # ======================
 # Mode app (admin / user)
 # ======================
-query_params = st.query_params
-mode = query_params.get("mode", "user")
-mode = mode.lower().strip()
+query_params = st.experimental_get_query_params()
+mode = query_params.get("mode", ["user"])[0].lower()
 
 if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
+
+mac, hostname = get_device_info()
 
 # ======================
 # Mode Admin
@@ -109,9 +95,9 @@ if mode == "admin":
         for dev in pending_devices:
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                st.write(f"**MAC:** {dev.get('mac','-')}")
+                st.write(f"**MAC:** {dev.get('mac','Unknown')}")
             with col2:
-                st.write(f"**Hostname:** {dev.get('hostname','-')}")
+                st.write(f"**Hostname:** {dev.get('hostname','Unknown')}")
             with col3:
                 if st.button("✅ Approve", key=f"approve_{dev.get('mac')}"):
                     dev["approved"] = True
@@ -131,7 +117,7 @@ if mode == "admin":
         for dev in approved_devices:
             col1, col2 = st.columns([3, 1])
             with col1:
-                st.write(f"✅ {dev.get('mac','-')} – {dev.get('hostname','-')}")
+                st.write(f"✅ {dev.get('mac','Unknown')} – {dev.get('hostname','Unknown')}")
             with col2:
                 if st.button("❌ Reject", key=f"unapprove_{dev.get('mac')}"):
                     dev["approved"] = False
@@ -140,13 +126,11 @@ if mode == "admin":
                     st.experimental_rerun()
     else:
         st.info("Belum ada device yang diapprove.")
-
     st.stop()
 
 # ======================
 # Mode User
 # ======================
-mac, hostname = get_device_info()
 devices = load_approved_devices()
 found = next((d for d in devices if d.get("mac") == mac), None)
 
@@ -157,7 +141,7 @@ if not found:
 
 st.title("🧬 National Topology")
 
-if not found.get("approved"):
+if not found.get("approved", False):
     st.warning("⚠️ Device/MAC Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
     st.markdown(f"""
         <p style="text-align:center;">
@@ -183,7 +167,7 @@ def highlight_text(text, keywords):
     return result
 
 # ======================
-# Session state user
+# Session state
 # ======================
 if "do_search" not in st.session_state:
     st.session_state.do_search = False
@@ -193,9 +177,6 @@ if "search_keyword" not in st.session_state:
 def trigger_search():
     st.session_state.do_search = True
 
-# ======================
-# Menu + Search
-# ======================
 col1, col2, col3 = st.columns([1, 2, 2])
 with col1:
     menu_option = st.radio("Pilih Tampilan:", ["Topology"])
@@ -212,9 +193,6 @@ with col3:
 
 canvas_height = 350
 
-# ======================
-# Helper get_col
-# ======================
 def get_col(df, name, alt=None):
     if name in df.columns:
         return name
@@ -222,9 +200,6 @@ def get_col(df, name, alt=None):
         return alt
     return None
 
-# ======================
-# Tampilan utama user
-# ======================
 st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
 st.markdown("""
 <h2 style="
@@ -328,6 +303,7 @@ else:
                     positions[nid] = (x, y)
 
                 added_nodes = set()
+
                 def get_node_info(nid):
                     df_match = ring_df[ring_df[col_site].astype(str).str.strip() == nid]
                     if df_match.empty:
@@ -389,8 +365,7 @@ else:
                     s = str(r[col_site]).strip()
                     t = str(r[col_dest]).strip()
                     if s and t and s.lower() not in ["nan","none"] and t.lower() not in ["nan","none"]:
-                        flp_len = r[col_flp_len] if col_flp_len in
-                        flp_len = r[col_flp_len] if col_flp_len in r and pd.notna(r[col_flp_len]) else ""
+                        flp_len = r[col_flp_len] if col_flp_len and col_flp_len in r and pd.notna(r[col_flp_len]) else ""
                         if s not in added_nodes:
                             net.add_node(s, label=s, font={"color": "red" if any(re.search(re.escape(kw), s, re.IGNORECASE) for kw in search_nodes) else "black"})
                             added_nodes.add(s)
