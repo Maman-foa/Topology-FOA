@@ -5,18 +5,6 @@ import os
 from datetime import datetime
 
 # ======================
-# Hapus warning Streamlit deprecated
-# ======================
-st.markdown(
-    """
-    <style>
-    .stAlert {display: none !important;}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ======================
 # Simpan file approval
 # ======================
 APPROVAL_FILE = "approved_devices.csv"
@@ -30,7 +18,7 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode (admin/user) — update sesuai Streamlit terbaru
+# Dapatkan mode (admin/user)
 # ======================
 mode = st.query_params.get("mode", ["user"])[0]
 
@@ -83,7 +71,6 @@ elif mode == "user":
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
-    # === Letakkan skrip Topology kamu di sini ===
     st.write("**Topology aktif untuk user ini**")
 
 else:
