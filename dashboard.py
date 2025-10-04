@@ -149,7 +149,16 @@ if not found:
     save_approved_devices(devices)
     found = {"ip": ip, "hostname": hostname, "approved": False}
 
-st.title(page_icon='HWI.png')
+import streamlit as st
+
+st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
+
+# Menampilkan logo dan judul
+col1, col2 = st.columns([1, 5])
+with col1:
+    st.image("HWI.png", width=50)  # logo
+with col2:
+    st.title("Fiber Optic Analyzer")
 
 if not found.get("approved"):
     st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
