@@ -8,33 +8,22 @@ import streamlit.components.v1 as components
 import re
 
 # ======================
-# Page config & CSS
+# Config Streamlit
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
 st.markdown(
     """
     <style>
-    .block-container { 
-        padding-top: 1rem; 
-        padding-bottom: 0rem; 
-    }
-    .canvas-border { 
-        border: 3px solid #333333; 
-        border-radius: 5px; 
-    }
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 60px;
-    }
-    header [data-testid="stToolbar"] {visibility: hidden; height: 0;}
-    [data-testid="stStatusWidget"] {visibility: hidden; height: 0;}
-    [data-testid="stSidebarNav"] {visibility: hidden; height: 0;}
+    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
+    [data-testid="stToolbar"] {visibility: hidden; height: 0;}
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # ======================
-# Simpan file approval
+# File Approval
 # ======================
 APPROVAL_FILE = "approved_devices.csv"
 if not os.path.exists(APPROVAL_FILE):
@@ -47,17 +36,16 @@ def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
 # ======================
-# Dapatkan mode (admin/user)
+# Dapatkan mode
 # ======================
-mode = st.query_params.get("mode", ["user"])
-mode = mode[0] if mode else "user"
+mode = st.query_params.get("mode", ["user"])[0].lower()
 
 if mode not in ["admin", "user"]:
-    st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
+    st.error("⚠️ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
 
 # ======================
-# MODE ADMIN
+# Mode Admin
 # ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
@@ -86,7 +74,7 @@ if mode == "admin":
     st.table(approvals)
 
 # ======================
-# MODE USER
+# Mode User
 # ======================
 else:
     ip_user = socket.gethostbyname(socket.gethostname())
@@ -111,40 +99,6 @@ else:
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
+    st.write("**Topology aktif untuk user ini**")
 
-    # ======================
-    # Fungsi Highlight
-    # ======================
-    def highlight_text(text, keywords):
-        if not keywords:
-            return text
-        result = str(text)
-        for kw in keywords:
-            pattern = re.compile(re.escape(kw), re.IGNORECASE)
-            result = pattern.sub(
-                lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", 
-                result
-            )
-        return result
-
-    # ======================
-    # Topologi UI
-    # ======================
-    col1, col2, col3 = st.columns([1,2,2])
-    with col1:
-        menu_option = st.radio("Pilih Tampilan:", ["Topology"])
-    with col2:
-        search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
-    with col3:
-        search_input = st.text_input(
-            "🔍 Masukkan keyword (pisahkan dengan koma):",
-            placeholder="Contoh: 16SBY0267, 16SBY0497"
-        )
-        search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
-
-    if not search_nodes:
-        st.info("ℹ️ Masukkan keyword di atas untuk memulai pencarian.")
-    else:
-        st.markdown("**📊 Menampilkan Topologi berdasarkan pencarian...**")
-        # Letakkan logika Topology kamu di sini (dari skrip kedua kamu)
-        st.write("Topology aktif untuk user ini")
+    # === Tambahkan kode Topology kamu di sini ===
