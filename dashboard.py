@@ -7,6 +7,7 @@ import re
 # ======================
 # Page config & CSS
 # ======================
+st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
 st.set_page_config(layout="wide")
 st.markdown(
     """
