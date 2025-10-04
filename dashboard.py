@@ -85,7 +85,7 @@ if mode == "admin":
 
     # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
-    if password != "Jakarta@24":
+    if password != "Alenadarman@86":
         st.error("Password salah ❌")
         st.stop()
 
