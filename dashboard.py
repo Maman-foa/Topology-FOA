@@ -73,45 +73,61 @@ if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
 
-# ==========================================================
-# ====================== MODE ADMIN =========================
-# ==========================================================
+# ======================
+# Mode Admin
+# ======================
 if mode == "admin":
-    st.title("🔐 Admin Panel – Approval Device")
+    st.title("🔧 Admin Dashboard")
+    password = st.text_input("Masukkan password admin:", type="password")
+    if password != "Jakarta@24":
+        st.error("Password salah")
+        st.stop()
 
-    devices = load_approved_devices()
-    pending = [d for d in devices if not d.get("approved")]
-    approved = [d for d in devices if d.get("approved")]
+    st.success("Login Admin berhasil ✅")
+    approvals = load_approvals()
 
-    st.subheader("📥 Pending Approval")
-    if pending:
-        for dev in pending:
-            col1, col2, col3 = st.columns([2, 2, 1])
+    st.subheader("Daftar Request Access")
+    requests = approvals[approvals["status"] == "pending"]
+    if requests.empty:
+        st.info("Tidak ada request akses baru.")
+    else:
+        for idx, row in requests.iterrows():
+            st.write(f"IP: {row['ip']} — Request: {row['request_time']}")
+            col1, col2 = st.columns([1,1])
             with col1:
-                st.write(f"**IP:** {dev['ip']}")
+                if st.button(f"Approve {row['ip']}", key=f"approve_{idx}"):
+                    approvals.loc[idx, "status"] = "approved"
+                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approvals(approvals)
+                    st.experimental_rerun()
             with col2:
-                st.write(f"**Hostname:** {dev['hostname']}")
-            with col3:
-                if st.button("✅ Approve", key=f"approve_{dev['ip']}"):
-                    dev["approved"] = True
-                    save_approved_devices(devices)
-                    st.success(f"Device {dev['ip']} disetujui ✅")
-                    st.rerun()
-                if st.button("❌ Reject", key=f"reject_{dev['ip']}"):
-                    devices.remove(dev)
-                    save_approved_devices(devices)
-                    st.warning(f"Device {dev['ip']} dihapus ❌")
-                    st.rerun()
-    else:
-        st.info("Tidak ada device pending approval.")
+                if st.button(f"Reject {row['ip']}", key=f"reject_{idx}"):
+                    approvals.loc[idx, "status"] = "rejected"
+                    approvals.loc[idx, "approved_time"] = ""
+                    save_approvals(approvals)
+                    st.experimental_rerun()
 
-    st.subheader("📋 Device Approved")
-    if approved:
-        for dev in approved:
-            st.write(f"✅ {dev['ip']} – {dev['hostname']}")
+    st.subheader("Daftar Semua Device")
+    if not approvals.empty:
+        for idx, row in approvals.iterrows():
+            col1, col2, col3 = st.columns([2,1,1])
+            col1.write(f"IP: {row['ip']} — Status: {row['status']} — Request: {row['request_time']}")
+            with col2:
+                if st.button(f"Approve", key=f"approve_all_{idx}"):
+                    approvals.loc[idx, "status"] = "approved"
+                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+            with col3:
+                if st.button(f"Reject", key=f"reject_all_{idx}"):
+                    approvals.loc[idx, "status"] = "rejected"
+                    approvals.loc[idx, "approved_time"] = ""
+                    save_approvals(approvals)
+                    st.experimental_rerun()
     else:
-        st.info("Belum ada device yang diapprove.")
-    st.stop()
+        st.info("Belum ada device yang terdaftar.")
+
+    st.table(approvals)
 
 # ==========================================================
 # ====================== MODE USER ==========================
