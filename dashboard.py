@@ -52,8 +52,10 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Fungsi mendapatkan device info
+# Dapatkan info device/IP
 # ======================
+import requests
+
 import socket
 import uuid
 
@@ -131,9 +133,9 @@ if mode == "admin":
 
     st.stop()
 
-# ======================
-# Mode User
-# ======================
+# ==========================================================
+# ====================== MODE USER ==========================
+# ==========================================================
 mac, hostname = get_device_info()
 devices = load_approved_devices()
 found = next((d for d in devices if d["mac"] == mac), None)
@@ -157,7 +159,6 @@ if not found.get("approved"):
     st.stop()
 
 st.success("✅ Akses diberikan. Menampilkan Topology...")
-
 
 # ======================
 # Fungsi Highlight
