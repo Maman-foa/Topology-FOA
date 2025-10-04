@@ -7,9 +7,9 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 import re
 
-# ------------------
+# ======================
 # Page Config & CSS
-# ------------------
+# ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
 st.markdown("""
 <style>
@@ -20,9 +20,9 @@ div[role="alert"] {display: none !important;}
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------
-# Approval Setup
-# ------------------
+# ======================
+# Approval File
+# ======================
 APPROVAL_FILE = "approved_devices.csv"
 if not os.path.exists(APPROVAL_FILE):
     pd.DataFrame(columns=["ip", "status", "request_time", "approved_time"]).to_csv(APPROVAL_FILE, index=False)
@@ -33,9 +33,9 @@ def load_approvals():
 def save_approvals(df):
     df.to_csv(APPROVAL_FILE, index=False)
 
-# ------------------
+# ======================
 # Mode Selection
-# ------------------
+# ======================
 params = st.experimental_get_query_params()
 mode = params.get("mode", [""])[0].lower()
 
@@ -43,9 +43,9 @@ if mode not in ["admin", "user"]:
     st.error("Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
 
-# ------------------
-# ADMIN Mode
-# ------------------
+# ======================
+# Admin Mode
+# ======================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
     password = st.text_input("Masukkan password admin:", type="password")
@@ -80,9 +80,9 @@ if mode == "admin":
     st.subheader("Daftar Semua Device")
     st.table(load_approvals())
 
-# ------------------
-# USER Mode
-# ------------------
+# ======================
+# User Mode
+# ======================
 elif mode == "user":
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
@@ -105,7 +105,9 @@ elif mode == "user":
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
     st.write("**Topology aktif untuk user ini**")
 
-    # ==== TOPOLOGY SCRIPT ====
+    # ======================
+    # Topology Script
+    # ======================
     def highlight_text(text, keywords):
         if not keywords:
             return text
@@ -138,7 +140,61 @@ elif mode == "user":
         st.info("ℹ️ Pilih kategori di atas, masukkan keyword lalu tekan Enter untuk menampilkan topology.")
     else:
         with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
-            # --- Semua kode topology yang kamu punya dimasukkan di sini ---
-            from your_topology_script import run_topology  # jika topology panjang, bisa dibuat fungsi
-            run_topology(search_by, search_nodes, canvas_height, highlight_text)
+            # --- Skrip Topology kamu dimasukkan di sini ---
+            file_path = 'SEPTEMBER_FOA - Update_2025.xlsb'
+            sheet_name = 'Query CW39_2025'
+            df = pd.read_excel(file_path, sheet_name=sheet_name, engine="pyxlsb")
+            df.columns = df.columns.str.strip()
 
+            col_site = "New Site ID"
+            col_dest = "New Destination"
+            col_fiber = "Fiber Type"
+            col_site_name = "Site Name"
+            col_host = "Host Name"
+            col_flp = "FLP Vendor"
+            col_flp_len = "FLP LENGTH"
+            col_syskey = "System Key"
+            col_dest_name = "Destination Name"
+            col_ring = "Ring ID"
+            col_member_ring = "Member Ring"
+
+            pattern = "|".join(map(re.escape, search_nodes))
+            if search_by == "New Site ID":
+                df_filtered = df[df[col_site].astype(str).str.contains(pattern, case=False, na=False)]
+            elif search_by == "Ring ID":
+                df_filtered = df[df[col_ring].astype(str).str.contains(pattern, case=False, na=False)]
+            else:
+                df_filtered = df[df[col_host].astype(str).str.contains(pattern, case=False, na=False)]
+
+            if df_filtered.empty:
+                st.warning("⚠️ Node tidak ditemukan di data.")
+            else:
+                ring_ids = df_filtered["Ring ID"].dropna().unique()
+                for ring in ring_ids:
+                    st.markdown(f"### 🔗 Ring ID: {highlight_text(ring, search_nodes)}", unsafe_allow_html=True)
+
+                    ring_df = df[df["Ring ID"] == ring].copy()
+
+                    ring_df[col_site] = ring_df[col_site].astype(str).str.strip()
+                    ring_df[col_dest] = ring_df[col_dest].astype(str).str.strip().replace({"nan": ""})
+
+                    nodes_order = list(pd.unique(pd.concat([ring_df[col_site], ring_df[col_dest]], ignore_index=True)))
+                    nodes_order = [str(n).strip() for n in nodes_order if pd.notna(n) and str(n).strip().lower() not in ["", "none"]]
+
+                    net = Network(height=f"{canvas_height}px", width="100%", bgcolor="#f8f8f8", directed=False)
+                    net.toggle_physics(False)
+
+                    for _, r in ring_df.iterrows():
+                        s = str(r[col_site]).strip()
+                        t = str(r[col_dest]).strip()
+                        if s and t:
+                            net.add_node(s, label=s)
+                            net.add_node(t, label=t)
+                            net.add_edge(s, t)
+
+                    html_str = net.generate_html()
+                    html_str = html_str.replace(
+                        '<body>',
+                        '<body><div class="canvas-border"><style>.vis-network{background-image: linear-gradient(to right, #d0d0d0 1px, transparent 1px), linear-gradient(to bottom, #d0d0d0 1px, transparent 1px); background-size: 50px 50px;}</style>'
+                    )
+                    components.html(html_str, height=canvas_height, scrolling=False)
