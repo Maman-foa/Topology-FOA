@@ -65,11 +65,19 @@ if mode == "admin":
     else:
         for idx, row in requests.iterrows():
             st.write(f"IP: {row['ip']} — Request: {row['request_time']}")
-            if st.button(f"Approve {row['ip']}", key=idx):
-                approvals.loc[idx, "status"] = "approved"
-                approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                save_approvals(approvals)
-                st.experimental_rerun()
+            col1, col2 = st.columns([1,1])
+            with col1:
+                if st.button(f"Approve {row['ip']}", key=f"approve_{idx}"):
+                    approvals.loc[idx, "status"] = "approved"
+                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+            with col2:
+                if st.button(f"Reject {row['ip']}", key=f"reject_{idx}"):
+                    approvals.loc[idx, "status"] = "rejected"
+                    approvals.loc[idx, "approved_time"] = ""
+                    save_approvals(approvals)
+                    st.experimental_rerun()
 
     st.subheader("Daftar Semua Device")
     st.table(approvals)
