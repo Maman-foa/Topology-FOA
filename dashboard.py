@@ -11,13 +11,18 @@ import re
 # Page config & CSS
 # ======================
 st.set_page_config(layout="wide", page_title="Fiber Optic Analyzer", page_icon="🧬")
-st.markdown("""
-<style>
-.block-container { padding-top: 1rem; padding-bottom: 0rem; }
-.canvas-border { border: 3px solid #333333; border-radius: 5px; }
-[data-testid="stToolbar"] {visibility: hidden; height: 0;}
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+    .canvas-border { border: 3px solid #333333; border-radius: 5px; }
+    [data-testid="stToolbar"] {visibility: hidden; height: 0;}
+    /* Hide experimental_get_query_params warning */
+    div[role="alert"] {display: none !important;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ======================
 # Approval file
@@ -77,39 +82,31 @@ if mode == "admin":
                     st.experimental_rerun()
 
     st.subheader("Daftar Semua Device")
+    if not approvals.empty:
+        for idx, row in approvals.iterrows():
+            col1, col2, col3 = st.columns([2,1,1])
+            col1.write(f"IP: {row['ip']} — Status: {row['status']} — Request: {row['request_time']}")
+            with col2:
+                if st.button(f"Approve", key=f"approve_all_{idx}"):
+                    approvals.loc[idx, "status"] = "approved"
+                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+            with col3:
+                if st.button(f"Reject", key=f"reject_all_{idx}"):
+                    approvals.loc[idx, "status"] = "rejected"
+                    approvals.loc[idx, "approved_time"] = ""
+                    save_approvals(approvals)
+                    st.experimental_rerun()
+    else:
+        st.info("Belum ada device yang terdaftar.")
+
     st.table(approvals)
 
 # ======================
 # User Mode
 # ======================
 elif mode == "user":
-    # --- Login user ---
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-
-    def login():
-        st.title("🔐 Login User")
-        password = st.text_input("Masukkan Password:", type="password")
-        st.markdown("""
-            <p style="text-align:center; margin-top:10px;">
-                Jika lupa password, hubungi admin di:<br>
-                <a href="https://wa.me/628977742777" target="_blank" style="text-decoration:none; font-weight:bold; color:green;">
-                    📲 Hubungi via WhatsApp
-                </a>
-            </p>
-        """, unsafe_allow_html=True)
-        if st.button("Login"):
-            if password == "Jakarta@24":
-                st.session_state.authenticated = True
-                st.success("Login berhasil! 🎉")
-            else:
-                st.error("Password salah.")
-
-    if not st.session_state.authenticated:
-        login()
-        st.stop()
-
-    # --- Cek approval ---
     ip_user = socket.gethostbyname(socket.gethostname())
     approvals = load_approvals()
     approved_ips = approvals[approvals["status"] == "approved"]["ip"].tolist()
@@ -125,41 +122,11 @@ elif mode == "user":
             save_approvals(approvals)
 
         st.warning("⚠️ Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
-        st.markdown('<a href="https://wa.me/628977742777" target="_blank">📲 Hubungi Admin via WhatsApp</a>', unsafe_allow_html=True)
+        st.markdown(
+            '<a href="https://wa.me/628977742777" target="_blank">📲 Hubungi Admin via WhatsApp</a>',
+            unsafe_allow_html=True
+        )
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
-
-    # --- Topology & Search (hanya user) ---
-    def highlight_text(text, keywords):
-        if not keywords: return text
-        result = str(text)
-        for kw in keywords:
-            pattern = re.compile(re.escape(kw), re.IGNORECASE)
-            result = pattern.sub(lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", result)
-        return result
-
-    col1, col2, col3 = st.columns([1,2,2])
-    with col1:
-        menu_option = st.radio("Pilih Tampilan:", ["Topology"])
-    with col2:
-        search_by = st.selectbox("Cari berdasarkan:", ["New Site ID", "Ring ID", "Host Name"])
-    with col3:
-        search_input = st.text_input("🔍 Masukkan keyword (pisahkan dengan koma):", key="search_keyword")
-        search_nodes = [s.strip() for s in search_input.split(",") if s.strip()]
-
-    canvas_height = 350
-
-    st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-    st.markdown("""
-        <h2 style="position:sticky; top:0; background-color:white; padding:12px; z-index:999; border-bottom:1px solid #ddd; margin:0;">
-            🧬 Topology Fiber Optic Active
-        </h2>
-    """, unsafe_allow_html=True)
-
-    if not search_nodes:
-        st.info("ℹ️ Masukkan keyword lalu tekan Enter untuk menampilkan topology.")
-    else:
-        with st.spinner("⏳ Sedang memuat data dan membangun topology..."):
-            # --- masukkan skrip topology kamu di sini ---
-            st.write("**Topology aktif untuk user ini**")
+    st.write("**Topology aktif untuk user ini**")
