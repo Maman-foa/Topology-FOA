@@ -52,7 +52,7 @@ def save_approved_devices(data):
         json.dump(data, f, indent=2)
 
 # ======================
-# Dapatkan info device/IP
+# Dapatkan info device/MAC
 # ======================
 import requests
 
@@ -103,19 +103,19 @@ if mode == "admin":
         for dev in pending_devices:
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                st.write(f"**IP:** {dev['ip']}")
+                st.write(f"**MAC:** {dev['mac']}")
             with col2:
                 st.write(f"**Hostname:** {dev['hostname']}")
             with col3:
-                if st.button("✅ Approve", key=f"approve_{dev['ip']}"):
+                if st.button("✅ Approve", key=f"approve_{dev['mac']}"):
                     dev["approved"] = True
                     save_approved_devices(devices)
-                    st.success(f"Device {dev['ip']} disetujui ✅")
+                    st.success(f"Device {dev['mac']} disetujui ✅")
                     st.rerun()
-                if st.button("❌ Reject", key=f"reject_{dev['ip']}"):
+                if st.button("❌ Reject", key=f"reject_{dev['mac']}"):
                     devices.remove(dev)
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['ip']} ditolak ❌")
+                    st.warning(f"Device {dev['mac']} ditolak ❌")
                     st.rerun()
     else:
         st.info("Tidak ada device pending approval.")
@@ -125,12 +125,12 @@ if mode == "admin":
         for dev in approved_devices:
             col1, col2 = st.columns([3, 1])
             with col1:
-                st.write(f"✅ {dev['ip']} – {dev['hostname']}")
+                st.write(f"✅ {dev['mac']} – {dev['hostname']}")
             with col2:
-                if st.button("❌ Reject", key=f"unapprove_{dev['ip']}"):
+                if st.button("❌ Reject", key=f"unapprove_{dev['mac']}"):
                     dev["approved"] = False
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['ip']} diubah menjadi pending ❌")
+                    st.warning(f"Device {dev['mac']} diubah menjadi pending ❌")
                     st.rerun()
     else:
         st.info("Belum ada device yang diapprove.")
@@ -140,26 +140,26 @@ if mode == "admin":
 # ==========================================================
 # ====================== MODE USER ==========================
 # ==========================================================
-ip, hostname = get_device_info()
+mac, hostname = get_device_info()
 devices = load_approved_devices()
-found = next((d for d in devices if d["ip"] == ip), None)
+found = next((d for d in devices if d["mac"] == mac), None)
 
 if not found:
-    devices.append({"ip": ip, "hostname": hostname, "approved": False})
+    devices.append({"mac": mac, "hostname": hostname, "approved": False})
     save_approved_devices(devices)
-    found = {"ip": ip, "hostname": hostname, "approved": False}
+    found = {"mac": mac, "hostname": hostname, "approved": False}
 
 st.title("🧬 National Topology")
 
 if not found.get("approved"):
-    st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
+    st.warning("⚠️ Device/MAC Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
     st.markdown("""
         <p style="text-align:center;">
             📲 <a href="https://wa.me/628977742777" target="_blank" 
             style="text-decoration:none; color:green; font-weight:bold;">Hubungi Admin via WhatsApp</a>
         </p>
     """, unsafe_allow_html=True)
-    st.info(f"**IP:** {ip}\n\n**Hostname:** {hostname}")
+    st.info(f"**MAC:** {mac}\n\n**Hostname:** {hostname}")
     st.stop()
 
 # ======================
