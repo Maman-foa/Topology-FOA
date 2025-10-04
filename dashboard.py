@@ -61,8 +61,11 @@ import uuid
 
 def get_device_info():
     hostname = socket.gethostname()
-    mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
-                         for ele in range(0,8*6,8)][::-1])
+    try:
+        mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
+                             for ele in range(0, 8*6, 8)][::-1])
+    except Exception as e:
+        mac_addr = "unknown_mac"
     return mac_addr, hostname
 
 # ======================
