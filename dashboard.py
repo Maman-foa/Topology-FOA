@@ -1,3 +1,6 @@
+masih ya 
+
+
 import streamlit as st
 import pandas as pd
 from pyvis.network import Network
@@ -56,15 +59,14 @@ def save_approved_devices(data):
 # ======================
 import requests
 
+import socket
+import uuid
+
 def get_device_info():
-    try:
-        # deteksi IP publik dari jaringan
-        ip = requests.get('https://api.ipify.org').text.strip()
-    except:
-        # fallback ke IP lokal jika offline
-        ip = socket.gethostbyname(socket.gethostname())
     hostname = socket.gethostname()
-    return ip, hostname
+    mac_addr = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
+                         for ele in range(0,8*6,8)][::-1])
+    return mac_addr, hostname
 
 
 # ======================
