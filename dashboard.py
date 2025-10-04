@@ -6,6 +6,7 @@ import socket
 import re
 import json
 import os
+from datetime import datetime
 
 # ======================
 # Konfigurasi halaman
@@ -66,15 +67,14 @@ def get_device_info():
 # Mode app (admin / user)
 # ======================
 query_params = st.query_params
-mode = query_params.get("mode", "user")
-mode = mode.lower().strip()
+mode = query_params.get("mode", "user").lower().strip()
 
 if mode not in ["admin", "user"]:
     st.error("❌ Mode tidak dikenali. Gunakan ?mode=admin atau ?mode=user")
     st.stop()
 
 # ======================
-# Fungsi highlight
+# Fungsi highlight teks
 # ======================
 def highlight_text(text, keywords):
     if not keywords:
@@ -85,62 +85,64 @@ def highlight_text(text, keywords):
         result = pattern.sub(lambda m: f"<mark style='background-color:yellow;color:black;'>{m.group(0)}</mark>", result)
     return result
 
-# ======================
-# Mode Admin
-# ======================
+# ==========================================================
+# ====================== MODE ADMIN =========================
+# ==========================================================
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
-        st.error("Password salah")
+        st.error("Password salah ❌")
         st.stop()
 
     st.success("Login Admin berhasil ✅")
-    approvals = load_approvals()
+    devices = load_approved_devices()
 
-    st.subheader("Daftar Request Access")
-    requests = approvals[approvals["status"] == "pending"]
-    if requests.empty:
-        st.info("Tidak ada request akses baru.")
-    else:
-        for idx, row in requests.iterrows():
-            st.write(f"IP: {row['ip']} — Request: {row['request_time']}")
-            col1, col2 = st.columns([1,1])
+    # Buat daftar status
+    pending = [d for d in devices if not d.get("approved")]
+    approved = [d for d in devices if d.get("approved")]
+
+    st.subheader("📥 Pending Approval")
+    if pending:
+        for d in pending:
+            col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                if st.button(f"Approve {row['ip']}", key=f"approve_{idx}"):
-                    approvals.loc[idx, "status"] = "approved"
-                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                st.write(f"**IP:** {d['ip']}")
             with col2:
-                if st.button(f"Reject {row['ip']}", key=f"reject_{idx}"):
-                    approvals.loc[idx, "status"] = "rejected"
-                    approvals.loc[idx, "approved_time"] = ""
-                    save_approvals(approvals)
-                    st.experimental_rerun()
-
-    st.subheader("Daftar Semua Device")
-    if not approvals.empty:
-        for idx, row in approvals.iterrows():
-            col1, col2, col3 = st.columns([2,1,1])
-            col1.write(f"IP: {row['ip']} — Status: {row['status']} — Request: {row['request_time']}")
-            with col2:
-                if st.button(f"Approve", key=f"approve_all_{idx}"):
-                    approvals.loc[idx, "status"] = "approved"
-                    approvals.loc[idx, "approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                st.write(f"**Hostname:** {d['hostname']}")
             with col3:
-                if st.button(f"Reject", key=f"reject_all_{idx}"):
-                    approvals.loc[idx, "status"] = "rejected"
-                    approvals.loc[idx, "approved_time"] = ""
-                    save_approvals(approvals)
-                    st.experimental_rerun()
+                if st.button(f"✅ Approve {d['ip']}", key=f"approve_{d['ip']}"):
+                    d["approved"] = True
+                    d["approved_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_approved_devices(devices)
+                    st.success(f"{d['ip']} berhasil diapprove ✅")
+                    st.rerun()
+                if st.button(f"❌ Reject {d['ip']}", key=f"reject_{d['ip']}"):
+                    devices.remove(d)
+                    save_approved_devices(devices)
+                    st.warning(f"{d['ip']} telah direject ❌")
+                    st.rerun()
     else:
-        st.info("Belum ada device yang terdaftar.")
+        st.info("Tidak ada request akses baru.")
 
-    st.table(approvals)
+    st.subheader("📋 Device Approved")
+    if approved:
+        for d in approved:
+            col1, col2, col3 = st.columns([2, 2, 1])
+            with col1:
+                st.write(f"✅ **{d['ip']}** — {d['hostname']}")
+            with col2:
+                st.write(f"Approved at: {d.get('approved_time', '-')}")
+            with col3:
+                if st.button(f"❌ Reject {d['ip']}", key=f"reject_approved_{d['ip']}"):
+                    devices.remove(d)
+                    save_approved_devices(devices)
+                    st.warning(f"{d['ip']} telah direject ❌")
+                    st.rerun()
+    else:
+        st.info("Belum ada device yang diapprove.")
 
+    st.stop()
 
 # ==========================================================
 # ====================== MODE USER ==========================
@@ -166,6 +168,39 @@ if not found.get("approved"):
     """, unsafe_allow_html=True)
     st.info(f"**IP:** {ip}\n\n**Hostname:** {hostname}")
     st.stop()
+
+st.success("✅ Akses diberikan. Menampilkan Topology...")
+
+# Contoh tampilan sederhana
+st.subheader("🔎 Pencarian Node")
+search_query = st.text_input("Masukkan keyword untuk cari node (contoh: Ring atau Site ID):")
+
+# Data dummy
+data = {
+    "Node A": ["A1", "A2", "A3"],
+    "Node B": ["B1", "B2", "B3"],
+    "Link": ["Fiber1", "Fiber2", "Fiber3"]
+}
+df = pd.DataFrame(data)
+
+if search_query:
+    mask = df.apply(lambda row: row.astype(str).str.contains(search_query, case=False)).any(axis=1)
+    df_filtered = df[mask]
+else:
+    df_filtered = df
+
+st.dataframe(df_filtered)
+
+# PyVis visualisasi
+net = Network(height="550px", width="100%", bgcolor="#222222", font_color="white")
+for _, row in df_filtered.iterrows():
+    net.add_node(row["Node A"], label=row["Node A"])
+    net.add_node(row["Node B"], label=row["Node B"])
+    net.add_edge(row["Node A"], row["Node B"], title=row["Link"])
+
+net.save_graph("topology.html")
+HtmlFile = open("topology.html", "r", encoding="utf-8")
+components.html(HtmlFile.read(), height=550)
 
 # ======================
 # Session state user
