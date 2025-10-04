@@ -20,7 +20,7 @@ def save_approvals(df):
 # ======================
 # Dapatkan mode (admin/user)
 # ======================
-mode = st.experimental_get_query_params().get("mode", ["user"])[0]
+mode = st.query_params.get("mode", ["user"])[0]  # <- Perubahan disini
 
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
@@ -55,12 +55,13 @@ else:  # mode user
 
     if ip_user not in approved_ips:
         if ip_user not in approvals["ip"].tolist():
-            approvals = approvals.append({
+            new_row = {
                 "ip": ip_user,
                 "status": "pending",
                 "request_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "approved_time": ""
-            }, ignore_index=True)
+            }
+            approvals = pd.concat([approvals, pd.DataFrame([new_row])], ignore_index=True)  # <- Perubahan disini
             save_approvals(approvals)
 
         st.warning("Device/IP Anda belum diapprove. Hubungi admin via WhatsApp.")
@@ -71,5 +72,4 @@ else:  # mode user
         st.stop()
 
     st.success("✅ Akses diberikan. Menampilkan Topologi...")
-    # === Letakkan skrip Topology kamu di sini ===
     st.write("**Topology aktif untuk user ini**")
