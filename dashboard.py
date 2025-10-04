@@ -183,7 +183,7 @@ st.markdown("""
 # ===============================
 st.markdown("""
     <div class="header">
-        <img src="HWI.png" alt="Logo">
+        <img src='HWI.png' alt="Logo">
         <h1>Fiber Optic Analyzer</h1>
     </div>
     """, unsafe_allow_html=True)
