@@ -1,3 +1,5 @@
+dari skrip ini mac masih blum berjalan
+
 import streamlit as st
 import pandas as pd
 from pyvis.network import Network
@@ -65,11 +67,12 @@ def get_device_info():
                          for ele in range(0,8*6,8)][::-1])
     return mac_addr, hostname
 
+
 # ======================
 # Mode app (admin / user)
 # ======================
-query_params = st.experimental_get_query_params()
-mode = query_params.get("mode", ["user"])[0]
+query_params = st.query_params
+mode = query_params.get("mode", "user")
 mode = mode.lower().strip()
 
 if mode not in ["admin", "user"]:
@@ -82,6 +85,7 @@ if mode not in ["admin", "user"]:
 if mode == "admin":
     st.title("🔧 Admin Dashboard")
 
+    # Password login admin
     password = st.text_input("Masukkan password admin:", type="password")
     if password != "Jakarta@24":
         st.error("Password salah ❌")
@@ -89,8 +93,10 @@ if mode == "admin":
 
     st.success("Login Admin berhasil ✅")
 
+    # Load daftar device dari file JSON
     devices = load_approved_devices()
 
+    # Bagi menjadi pending & approved
     pending_devices = [d for d in devices if not d.get("approved", False)]
     approved_devices = [d for d in devices if d.get("approved", False)]
 
@@ -99,20 +105,20 @@ if mode == "admin":
         for dev in pending_devices:
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                st.write(f"**MAC:** {dev['mac']}")
+                st.write(f"**IP:** {dev['ip']}")
             with col2:
                 st.write(f"**Hostname:** {dev['hostname']}")
             with col3:
-                if st.button("✅ Approve", key=f"approve_{dev['mac']}"):
+                if st.button("✅ Approve", key=f"approve_{dev['ip']}"):
                     dev["approved"] = True
                     save_approved_devices(devices)
-                    st.success(f"Device {dev['mac']} disetujui ✅")
-                    st.experimental_rerun()
-                if st.button("❌ Reject", key=f"reject_{dev['mac']}"):
+                    st.success(f"Device {dev['ip']} disetujui ✅")
+                    st.rerun()
+                if st.button("❌ Reject", key=f"reject_{dev['ip']}"):
                     devices.remove(dev)
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['mac']} ditolak ❌")
-                    st.experimental_rerun()
+                    st.warning(f"Device {dev['ip']} ditolak ❌")
+                    st.rerun()
     else:
         st.info("Tidak ada device pending approval.")
 
@@ -121,13 +127,13 @@ if mode == "admin":
         for dev in approved_devices:
             col1, col2 = st.columns([3, 1])
             with col1:
-                st.write(f"✅ {dev['mac']} – {dev['hostname']}")
+                st.write(f"✅ {dev['ip']} – {dev['hostname']}")
             with col2:
-                if st.button("❌ Reject", key=f"unapprove_{dev['mac']}"):
+                if st.button("❌ Reject", key=f"unapprove_{dev['ip']}"):
                     dev["approved"] = False
                     save_approved_devices(devices)
-                    st.warning(f"Device {dev['mac']} diubah menjadi pending ❌")
-                    st.experimental_rerun()
+                    st.warning(f"Device {dev['ip']} diubah menjadi pending ❌")
+                    st.rerun()
     else:
         st.info("Belum ada device yang diapprove.")
 
@@ -136,28 +142,31 @@ if mode == "admin":
 # ==========================================================
 # ====================== MODE USER ==========================
 # ==========================================================
-mac, hostname = get_device_info()
+ip, hostname = get_device_info()
 devices = load_approved_devices()
-found = next((d for d in devices if d["mac"] == mac), None)
+found = next((d for d in devices if d["ip"] == ip), None)
 
 if not found:
-    devices.append({"mac": mac, "hostname": hostname, "approved": False})
+    devices.append({"ip": ip, "hostname": hostname, "approved": False})
     save_approved_devices(devices)
-    found = {"mac": mac, "hostname": hostname, "approved": False}
+    found = {"ip": ip, "hostname": hostname, "approved": False}
 
 st.title("🧬 National Topology")
 
 if not found.get("approved"):
-    st.warning("⚠️ Device/MAC Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
-    st.markdown(f"""
+    st.warning("⚠️ Device/IP Anda belum diapprove.\nSilakan hubungi admin untuk approval.")
+    st.markdown("""
         <p style="text-align:center;">
             📲 <a href="https://wa.me/628977742777" target="_blank" 
             style="text-decoration:none; color:green; font-weight:bold;">Hubungi Admin via WhatsApp</a>
         </p>
     """, unsafe_allow_html=True)
-    st.info(f"**MAC:** {mac}\n\n**Hostname:** {hostname}")
+    st.info(f"**IP:** {ip}\n\n**Hostname:** {hostname}")
     st.stop()
 
+# ======================
+# Setelah approved
+# ======================
 st.success("✅ Akses diberikan. Menampilkan Topology...")
 
 # ======================
