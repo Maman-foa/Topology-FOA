@@ -150,6 +150,16 @@ if not found:
     found = {"ip": ip, "hostname": hostname, "approved": False}
 
 import streamlit as st
+import base64
+
+# ===============================
+# Fungsi untuk memuat gambar lokal ke HTML
+# ===============================
+def local_image_to_html(image_path, width=None):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    width_attr = f'width="{width}"' if width else ""
+    return f'<img src="data:image/png;base64,{encoded_string}" {width_attr}>'
 
 # ===============================
 # Set page config
@@ -157,36 +167,12 @@ import streamlit as st
 st.set_page_config(page_title="Fiber Optic Analyzer", layout="wide")
 
 # ===============================
-# CSS untuk header rapi
+# Menampilkan gambar via HTML
 # ===============================
-st.markdown("""
-    <style>
-    .block-container {
-        padding-top: 1rem;
-    }
-    .header {
-        display: flex;
-        align-items: center;  /* sejajarkan logo dan teks */
-        gap: 10px;            /* jarak antara logo dan judul */
-    }
-    .header img {
-        height: 50px;         /* ukuran logo */
-    }
-    .header h1 {
-        margin: 0;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+image_html = local_image_to_html("HWI.png", width=50)
+st.markdown(image_html, unsafe_allow_html=True)
 
-# ===============================
-# Header dengan logo + judul
-# ===============================
-st.markdown("""
-    <div class="header">
-        <img src='HWI.png' alt="HWI.png">
-        <h1>Fiber Optic Analyzer</h1>
-    </div>
-    """, unsafe_allow_html=True)
+st.title("Fiber Optic Analyzer")
 
 
 if not found.get("approved"):
