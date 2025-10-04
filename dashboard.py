@@ -188,7 +188,7 @@ st.markdown("""
 # ===============================
 # Membuat header dengan logo + judul
 # ===============================
-image_html = local_image_to_html("HWI.png", height=50)
+image_html = local_image_to_html("HWI.png", height=100)
 st.markdown(f"""
 <div class="header">
     {image_html}
