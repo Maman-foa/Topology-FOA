@@ -410,7 +410,7 @@ else:
                         info = get_node_info(nid)
                         fiber = info["Fiber Type"].strip() if info["Fiber Type"] else ""
                         if node_degree.get(nid, 0) == 1 and fiber.lower() not in ["p0_1"]:
-                            fiber = "Single Leg"
+                            fiber = "1 Leg"
                         f_low = fiber.lower()
                         node_image = (
                             "https://img.icons8.com/ios-filled/50/007FFF/router.png" if f_low=="dark fiber" else
